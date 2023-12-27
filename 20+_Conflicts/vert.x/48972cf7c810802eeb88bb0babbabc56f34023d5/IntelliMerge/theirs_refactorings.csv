@@ -1,0 +1,5 @@
+refactoring_type;node_type;confidence;before_location;before_node;after_location;after_node
+Change Method Signature;method;0.88;359-400;org.vertx.java.core.eventbus.impl.DefaultEventBus.sendOrPub(ServerID, BaseMessage, Handler);400-440;org.vertx.java.core.eventbus.impl.DefaultEventBus.sendOrPub(boolean, ServerID, BaseMessage, Handler)
+Change Method Signature;method;0.73;355-357;org.vertx.java.core.eventbus.impl.DefaultEventBus.sendOrPub(BaseMessage, Handler);396-398;org.vertx.java.core.eventbus.impl.DefaultEventBus.sendOrPub(boolean, BaseMessage, Handler)
+Inline Method;method;0.61;588-613;org.vertx.java.core.eventbus.impl.DefaultEventBus.receiveMessage(BaseMessage);568-587;org.vertx.java.core.eventbus.impl.DefaultEventBus.doReceive(Handlers, BaseMessage, HandlerHolder)
+Change Field Signature;field;0.87;66-66;org.vertx.java.core.eventbus.impl.DefaultEventBus.handlerMap;66-66;org.vertx.java.core.eventbus.impl.DefaultEventBus.handlers
