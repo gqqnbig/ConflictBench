@@ -1,0 +1,2 @@
+refactoring_type;node_type;confidence;before_location;before_node;after_location;after_node
+Change Method Signature;method;0.7;106-112;com.dangdang.ddframe.job.cloud.scheduler.boot.MasterBootstrap.getSchedulerDriver(LeasesQueue, TaskScheduler, FacadeService, JobEventBus, StatisticManager);134-144;com.dangdang.ddframe.job.cloud.scheduler.boot.MasterBootstrap.getSchedulerDriver(LeasesQueue, TaskScheduler, JobEventBus)
