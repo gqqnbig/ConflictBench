@@ -1,0 +1,10 @@
+KDiff3
+https://github.com/KDE/kdiff3
+
+Our version in this experiment is 1.9.5.
+
+To install KDiff3,
+apt install kdiff3
+
+To run KDiff3
+kdiff3 base left right -m -o outputfile
