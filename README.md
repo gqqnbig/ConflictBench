@@ -57,4 +57,4 @@
 NOTICE: 
 1. Before running the script, update the variable `path_prefix` to your local repository path in `script.py`. `resume_experiment` is set to FALSE by default. If it's true, script will always read stored project_record.txt in Data folder.
 2. `project_record.txt` is the key file to store all information. As the script running, `project_record.txt` will be updated and `output` folder will store experiment result.
-
+3. `JDime` and `AutoMerge` need to install libgit2-1.1. Use command `apt install libgit2-1.1`
