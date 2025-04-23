@@ -243,6 +243,8 @@ resume_experiment = False
 logger = logging.getLogger('textual_conflict_logger')
 logger.setLevel(logging.INFO)
 # create file handler which logs even debug messages
+if os.path.isdir(os.path.join(path_prefix, logger_path))==False:
+    raise Exception("Path "+os.path.join(path_prefix, logger_path)+" does not exist.")
 fh = logging.FileHandler(os.path.join(path_prefix, logger_path, 'textual_conflict.log'))
 # fh = logging.FileHandler('script.log')
 fh.setLevel(logging.INFO)
