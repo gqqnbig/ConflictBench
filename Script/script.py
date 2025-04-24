@@ -224,16 +224,19 @@ def clean_folder(path, clean_logger):
     else:
         # Empty path, skip
         pass
+		
+		
+def prepare_repo(local_path, project_url, sha):
+    if os.path.isdir(local_path) and os.path.isdir(os.path.join(local_path, '.git')):
+        repo = Repo(local_path)
+    else:
+        repo = Repo.clone_from(project_url, local_path, allow_unsafe_options=True,
+                               multi_options=[f'--config remote.origin.fetch=+{sha}:refs/remotes/origin/{sha}',
+                                              '--no-checkout'])
+    repo.git.config('core.longpaths', 'true')
+    repo.git.checkout(sha, force=True)
 
-def downloadfromgithub(URL,local_path):
-    # Clone the repository
-    try:
-        Repo.clone_from(URL, local_path)
-        logger.info("Successfully cloned repository " + URL)
-        
-    except Exception as e:
-        logger.error("Error cloning repository " + URL + ':' + str(e))        
-        raise
+
 # Chose to continue experiment
 # resume_experiment = True
 resume_experiment = False
@@ -308,10 +311,8 @@ try:
         project_record['Current_Index'] = i
         logger.info("Start processing index " + str(i) + "\tproject " + project_name + " commit " + commit['child'])
 
-        # Ensure workspace is empty
-        clean_folder(os.path.join(path_prefix, workspace), logger)
-        # download repository to workspace
-        downloadfromgithub(project_url, os.path.join(path_prefix, workspace, project_name))
+        prepare_repo(os.path.join(path_prefix, workspace, project_name), project_url, commit['child'])
+
         # Generate four versions in workspace
         # Make a copy and change to base version
         shutil.copytree(os.path.join(path_prefix, workspace, project_name),
