@@ -230,6 +230,7 @@ def prepare_repo(local_path, project_url, sha):
     if os.path.isdir(local_path) and os.path.isdir(os.path.join(local_path, '.git')):
         repo = Repo(local_path)
     else:
+        # The --bracnh option in git clone does not take a SHA.
         repo = Repo.clone_from(project_url, local_path, allow_unsafe_options=True,
                                multi_options=[f'--config remote.origin.fetch=+{sha}:refs/remotes/origin/{sha}',
                                               '--no-checkout'])
