@@ -231,6 +231,7 @@ def prepare_repo(local_path, project_url, sha):
     if os.path.isdir(local_path) and os.path.isdir(os.path.join(local_path, '.git')):
         repo = Repo(local_path)
     else:
+        # clone_from() requires a valid current directory.
         # The --bracnh option in git clone does not take a SHA.
         repo = Repo.clone_from(project_url, local_path, allow_unsafe_options=True,
                                multi_options=[f'--config remote.origin.fetch=+{sha}:refs/remotes/origin/{sha}',
@@ -330,6 +331,8 @@ try:
         project_record['Current_Index'] = i
         logger.info("Start processing index " + str(i) + "\tproject " + project_name + " commit " + commit['child'])
 
+        
+        os.chdir(os.path.join(path_prefix, workspace))
         prepare_repo(os.path.join(path_prefix, workspace, project_name), project_url, commit['child'])
 
         createBranchVersion('base')
