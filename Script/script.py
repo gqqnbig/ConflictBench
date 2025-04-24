@@ -81,12 +81,12 @@ def merge_with_FSTMerge(input_path, output_path, logger):
         f.write("left\nbase\nright");
         f.close()
         # Run FSTMerge
-        proc = subprocess.Popen("java -cp " +
-                                os.path.join(path_prefix, FSTMerge_executable_path) +
-                                " " + "merger.FSTGenMerger --expression " +
-                                os.path.join(input_path, "merge.config") + " > " +
-                                os.path.join(output_path, "result.txt"),
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        cmd = ("java -cp " +
+               os.path.join(path_prefix, FSTMerge_executable_path) +
+               " " + "merger.FSTGenMerger --expression " +
+               os.path.join(input_path, "merge.config") + " > " +
+               os.path.join(output_path, "result.txt"))
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
         outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESTORE)
         if proc.returncode == 0:
             # Update logger
@@ -100,8 +100,8 @@ def merge_with_FSTMerge(input_path, output_path, logger):
                 raise AbnormalBehaviourError("FSTMerge generated folder doesn't exist")
         else:
             # Failed to run JDime
-            logger.info("Fail to run FSTMerge")
-            raise AbnormalBehaviourError("Fail to run FSTMerge")
+            logger.info("Fail to run '" + cmd + "' in shell: " + errs)
+            raise AbnormalBehaviourError("Fail to run '" + cmd + "' in shell: " + errs)
     except subprocess.TimeoutExpired:
         # Terminate the unfinished process
         proc.terminate()
