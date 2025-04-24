@@ -75,43 +75,40 @@ def merge_with_JDime(input_path, output_path, mode, logger):
         pass
 
 
-def merge_with_FSTMerge(input_path, output_path, logger):
+def runProcess(cmd):
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
     try:
-        # Create merge.config at first
-        f = open(os.path.join(input_path, "merge.config"), "w")
-        f.write("left\nbase\nright");
-        f.close()
-        # Run FSTMerge
-        cmd = ("java -cp " +
-               os.path.join(path_prefix, FSTMerge_executable_path) +
-               " " + "merger.FSTGenMerger --expression " +
-               os.path.join(input_path, "merge.config") + " > " +
-               os.path.join(output_path, "result.txt"))
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
         outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESTORE)
-        if proc.returncode == 0:
-            # Update logger
-            logger.info("Finish FSTMerge")
-            # Move the generated folder into output path
-            if os.path.exists(os.path.join(input_path, "merge")) and\
-                    not os.path.isfile(os.path.join(input_path, "merge")):
-                shutil.move(os.path.join(input_path, "merge"),
-                            os.path.join(output_path))
-            else:
-                raise AbnormalBehaviourError("FSTMerge generated folder doesn't exist")
-        else:
+        if proc.returncode != 0:
             # Failed to run JDime
             logger.info("Fail to run '" + cmd + "' in shell: " + errs)
             raise AbnormalBehaviourError("Fail to run '" + cmd + "' in shell: " + errs)
     except subprocess.TimeoutExpired:
         # Terminate the unfinished process
         proc.terminate()
-        # Timeout occur
-        # Update logger
-        logger.error("Fail to run FSTMerge in time")
-        raise AbnormalBehaviourError("Fail to run FSTMerge in time")
-    finally:
-        pass
+        logger.error(f'{cmd} does not finish in time')
+        raise AbnormalBehaviourError(f'{cmd} does not finish in time')
+
+
+def merge_with_FSTMerge(input_path, output_path, logger):
+    # Create merge.config at first
+    f = open(os.path.join(input_path, "merge.config"), "w")
+    f.write("left\nbase\nright");
+    f.close()
+    # Run FSTMerge
+    runProcess("java -cp " +
+               os.path.join(path_prefix, FSTMerge_executable_path) +
+               " " + "merger.FSTGenMerger --expression " +
+               os.path.join(input_path, "merge.config") + " > " +
+               os.path.join(output_path, "result.txt"))
+    logger.info("Finish FSTMerge")
+    # Move the generated folder into output path
+    if os.path.exists(os.path.join(input_path, "merge")) and \
+            not os.path.isfile(os.path.join(input_path, "merge")):
+        shutil.move(os.path.join(input_path, "merge"),
+                    os.path.join(output_path))
+    else:
+        raise AbnormalBehaviourError("FSTMerge generated folder doesn't exist")
 
 
 def merge_with_IntelliMerge(input_path, output_path, logger):
@@ -144,34 +141,14 @@ def merge_with_IntelliMerge(input_path, output_path, logger):
         pass
 
 
-def merge_with_AutoMerge(input_path, output_path, logger):
-    try:
-        # Run AutoMerge
-        proc = subprocess.Popen("java -jar " +
-                                os.path.join(path_prefix, AutoMerge_executable_path) +
-                                " " + "-o " + output_path + " -m structured -log info -f -S " +
-                                os.path.join(input_path, "left") + " " +
-                                os.path.join(input_path, "base") + " " +
-                                os.path.join(input_path, "right"),
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESTORE)
-        if proc.returncode == 0:
-            # Update logger
-            logger.info("Finish AutoMerge")
-            return True
-        else:
-            # Failed to run JDime
-            logger.info("Fail to run AutoMerge")
-            raise AbnormalBehaviourError("Fail to run AutoMerge")
-    except subprocess.TimeoutExpired:
-        # Terminate the unfinished process
-        proc.terminate()
-        # Timeout occur
-        # Update logger
-        logger.error("Fail to run AutoMerge in time")
-        raise AbnormalBehaviourError("Fail to run AutoMerge in time")
-    finally:
-        pass
+def merge_with_AutoMerge(input_path, output_path):
+    runProcess("java -jar " +
+               os.path.join(path_prefix, AutoMerge_executable_path) +
+               " " + "-o " + output_path + " -m structured -log info -f -S " +
+               os.path.join(input_path, "left") + " " +
+               os.path.join(input_path, "base") + " " +
+               os.path.join(input_path, "right"))
+
 
 # merge two commits
 def git_merge(right_parent, logger):
