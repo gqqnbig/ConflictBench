@@ -1,6 +1,7 @@
 # Script to run experiments
 import glob
 import os
+import sys
 import logging
 import shutil
 from pathlib import Path
@@ -236,6 +237,23 @@ def prepare_repo(local_path, project_url, sha):
                                               '--no-checkout'])
     repo.git.config('core.longpaths', 'true')
     repo.git.checkout(sha, force=True)
+    
+
+def createBranchVersion(folderName):
+    try:
+        # Generate four versions in workspace
+        # Make a copy and change to base version
+        shutil.copytree(os.path.join(path_prefix, workspace, project_name),
+                        os.path.join(path_prefix, workspace, folderName),
+                        symlinks=True)
+    except shutil.Error as e:
+        print(f'Error in creating the {folderName} folder:', file=sys.stderr)
+        for arg in e.args[0]:
+            print(arg[2], file=sys.stderr)
+        exit(1)
+    except IOError as e:
+        print(f'Error in creating the {folderName} folder: ' + str(e), file=sys.stderr)
+        exit(1)
 
 
 # Chose to continue experiment
@@ -314,12 +332,9 @@ try:
 
         prepare_repo(os.path.join(path_prefix, workspace, project_name), project_url, commit['child'])
 
-        # Generate four versions in workspace
-        # Make a copy and change to base version
-        shutil.copytree(os.path.join(path_prefix, workspace, project_name),
-                        os.path.join(path_prefix, workspace, 'base'), symlinks=True)
+        createBranchVersion('base')
         os.chdir(os.path.join(path_prefix, workspace, 'base'))
-        Repo(os.getcwd()).git.reset('--hard', commit['base'])        
+        Repo(os.getcwd()).git.reset('--hard', commit['base'])
         # git_reset_commit(commit['base'], logger)
         # Except the conflicting file, remove all other files in base version
         os.chdir(os.path.join(path_prefix, workspace, 'base'))
@@ -329,9 +344,8 @@ try:
             if os.path.isfile(filename) and filename != file_path:
                 os.remove(filename)
         logger.info("Complete deletion in base version")
-        # Make a copy and change to left version
-        shutil.copytree(os.path.join(path_prefix, workspace, project_name),
-                        os.path.join(path_prefix, workspace, 'left'), symlinks=True)
+
+        createBranchVersion('left')
         os.chdir(os.path.join(path_prefix, workspace, 'left'))
         Repo(os.getcwd()).git.reset('--hard', commit['left'])
         # git_reset_commit(commit['left'], logger)
@@ -343,9 +357,8 @@ try:
             if os.path.isfile(filename) and filename != file_path:
                 os.remove(filename)
         logger.info("Complete deletion in left version")
-        # Make a copy and change to right version
-        shutil.copytree(os.path.join(path_prefix, workspace, project_name),
-                        os.path.join(path_prefix, workspace, 'right'), symlinks=True)
+
+        createBranchVersion('right')
         os.chdir(os.path.join(path_prefix, workspace, 'right'))
         Repo(os.getcwd()).git.reset('--hard', commit['right'])
         # git_reset_commit(commit['right'], logger)
@@ -357,9 +370,8 @@ try:
             if os.path.isfile(filename) and filename != file_path:
                 os.remove(filename)
         logger.info("Complete deletion in right version")
-        # Make a copy and change to child version
-        shutil.copytree(os.path.join(path_prefix, workspace, project_name),
-                        os.path.join(path_prefix, workspace, 'child'), symlinks=True)
+
+        createBranchVersion('child')
         os.chdir(os.path.join(path_prefix, workspace, 'child'))
         Repo(os.getcwd()).git.reset('--hard', commit['child'])
         # git_reset_commit(commit['child'], logger)
@@ -373,8 +385,8 @@ try:
         logger.info("Complete deletion in child version")
         # Run git-merge to get the git-merge version
         # Make a copy and change to left version
-        shutil.copytree(os.path.join(path_prefix, workspace, project_name),
-                        os.path.join(path_prefix, workspace, 'git-merge'), symlinks=True)
+
+        createBranchVersion('git-merge')
         os.chdir(os.path.join(path_prefix, workspace, 'git-merge'))
         # Reset to left version first
         Repo(os.getcwd()).git.reset('--hard', commit['left'])
