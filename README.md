@@ -60,6 +60,9 @@ AutoMerge requires JavaFX. Adoptium JDK may not work.[ref](https://github.com/ad
 
 `Resource` folder contain 3 folders including `output`, `workspace` and `merge_scenarios`.
 `merge_scenarios` folder stores all 180 merge scenarios. The download link is https://drive.google.com/file/d/1UyHKtQEyFiIcfi-Y1aEmmpNbOQns645M/view?usp=drive_link. There are 180 folders named with the project name in `merge_scenarios` folder. In each project folder, there is only one folder named with commit hash. The commit hash is developers’ merged version m in paper. In each commit folder, there are 8 folders. 4 folders are tool execution reuslts corresponding to FSTMerge/JDime/IntelliMerge/AutoMerge. 4 folders are origin versions include base/left/right/child. Only the conflicting file remained in these folders. All other files are removed.
+
+`merge_scenarios 20+ lines.7z` contains 10 repositories with conflicting hunks of more than 20 lines. The download link is https://drive.google.com/file/d/1PEagnwa2_Gd9UF_jOl74o6Ri84zbzAJY/view?usp=sharing.
+
 `workspace` is temp folder during experiments.
 `output` contain all experiment results.
 
