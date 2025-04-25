@@ -1,4 +1,10 @@
 # ConflictBench
+
+To use this test bench on Windows, you should enable long path support because many Java repositories have paths more than 260 characters. In gpedit.msc, set `Computer Configuration > Administrative Templates > System > Filesystem > Enable Win32 long paths`. [ref](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation)
+
+
+
+
 `ConflictBench`
 
 ├── `Logger`
