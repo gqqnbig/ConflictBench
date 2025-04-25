@@ -1,8 +1,13 @@
 # ConflictBench
 
+## System Requirements
+
+According to the associated paper (ConflictBench: A benchmark to evaluate software merge tools), this test bench is best run on Ubuntu 22.04 desktop (Debian 12).
+
 To use this test bench on Windows, you should enable long path support because many Java repositories have paths more than 260 characters. In gpedit.msc, set `Computer Configuration > Administrative Templates > System > Filesystem > Enable Win32 long paths`. [ref](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation)
 
-
+FSTMerge requires Java 8.
+AutoMerge requires JavaFX. Adoptium JDK may not work.[ref](https://github.com/adoptium/temurin-build/issues/577)
 
 
 `ConflictBench`
@@ -52,8 +57,6 @@ To use this test bench on Windows, you should enable long path support because m
 `Data` folder store the input total_list.txt, also store the project_record.txt to contain all information. DataSheet.xlsx is the manually checked sheet for all 180 merge scenarios.
 
 `MergeTools` folder contain 5 merge tools used in this experiment.
-FSTMerge requires Java 8.
-AutoMerge requires JavaFX. Adoptium JDK may not work.[ref](https://github.com/adoptium/temurin-build/issues/577)
 
 `Resource` folder contain 3 folders including `output`, `workspace` and `merge_scenarios`.
 `merge_scenarios` folder stores all 180 merge scenarios. The download link is https://drive.google.com/file/d/1UyHKtQEyFiIcfi-Y1aEmmpNbOQns645M/view?usp=drive_link. There are 180 folders named with the project name in `merge_scenarios` folder. In each project folder, there is only one folder named with commit hash. The commit hash is developers’ merged version m in paper. In each commit folder, there are 8 folders. 4 folders are tool execution reuslts corresponding to FSTMerge/JDime/IntelliMerge/AutoMerge. 4 folders are origin versions include base/left/right/child. Only the conflicting file remained in these folders. All other files are removed.
