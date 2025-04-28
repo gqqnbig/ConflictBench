@@ -10,10 +10,8 @@ from git import Repo
 import subprocess
 
 # Set path
-path_prefix = '/home/ppp/Research_Projects/Merge_Conflicts/Test'
 workspace = 'Resource/workspace'
 logger_path = 'Logger'
-data_path = 'Data'
 output_path = 'Resource/output'
 FSTMerge_executable_path = 'MergeTools/FSTMerge/featurehouse_20220107.jar'
 JDime_executable_path = 'MergeTools/JDime/bin/JDime'
@@ -242,41 +240,56 @@ resume_experiment = False
 # create logger with 'script_logger'
 logger = logging.getLogger('textual_conflict_logger')
 logger.setLevel(logging.INFO)
-# create file handler which logs even debug messages
-if os.path.isdir(os.path.join(path_prefix, logger_path))==False:
-    raise Exception("Path "+os.path.join(path_prefix, logger_path)+" does not exist.")
-fh = logging.FileHandler(os.path.join(path_prefix, logger_path, 'textual_conflict.log'))
-# fh = logging.FileHandler('script.log')
-fh.setLevel(logging.INFO)
-# create formatter and add it to the handlers
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-# add the handlers to the logger
-logger.addHandler(fh)
 
-try:    
-    
-    # Read total_list
-    if os.path.exists(os.path.join(path_prefix, data_path, "total_list.txt")) and \
-            os.path.isfile(os.path.join(path_prefix, data_path, "total_list.txt")):
-        with open(os.path.join(path_prefix, data_path, "total_list.txt"), 'r') as f:
-            lines = f.readlines()
-            total_list = []
-            for line in lines:
-                parts = line.split('\t')
-                # Create a dictionary for each line
-                item = {
-                    'repo_url': parts[0],
-                    'project_name': parts[1],
-                    'child_hash': parts[2],
-                    'left_hash': parts[3],
-                    'right_hash': parts[4],
-                    'base_hash': parts[5],
-                    'conflicting_file': parts[6].strip(),  # Use strip to remove the newline character at the end of each line
-                    }
-                total_list.append(item)
-    else:
-        raise Exception("Cannot find total_list.txt")
+if __name__ == '__main__':
+	try:
+		i = sys.argv.index('--path-prefix')
+		path_prefix = sys.argv[i + 1]
+	except:
+		path_prefix = pathlib.Path(__file__).parent.parent.resolve()
+
+	# create file handler which logs even debug messages
+	if os.path.isdir(os.path.join(path_prefix, logger_path)) == False:
+		raise Exception("Path " + os.path.join(path_prefix, logger_path) + " does not exist.")
+	fh = logging.FileHandler(os.path.join(path_prefix, logger_path, 'textual_conflict.log'))
+	# fh = logging.FileHandler('script.log')
+	fh.setLevel(logging.INFO)
+	# create formatter and add it to the handlers
+	formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+	fh.setFormatter(formatter)
+	# add the handlers to the logger
+	logger.addHandler(fh)
+
+	try:
+		i = sys.argv.index('--total_list')
+		totalListPath = sys.argv[i + 1]
+	except:
+		totalListPath = os.path.join(path_prefix, 'Data', "total_list.txt")
+
+	if not os.path.isfile(totalListPath):
+		print(f'The list of example files is not at {totalListPath}.', file=sys.stderr)
+		print('Use option --path-prefix to specify the path prefix.', file=sys.stderr)
+		print('Use option --total_list to directly specify the path to total_list.txt.', file=sys.stderr)
+		exit(1)
+
+	# Read total_list
+	with open(totalListPath, 'r') as f:
+		lines = f.readlines()
+		total_list = []
+		for line in lines:
+			parts = line.split('\t')
+			# Create a dictionary for each line
+			item = {
+				'repo_url': parts[0],
+				'project_name': parts[1],
+				'child_hash': parts[2],  # merge hash
+				'left_hash': parts[3],
+				'right_hash': parts[4],
+				'base_hash': parts[5],
+				'conflicting_file': parts[6].strip(),
+				# Use strip to remove the newline character at the end of each line
+			}
+			total_list.append(item)
 
     # 
     if(resume_experiment):
@@ -513,18 +526,18 @@ try:
         # Add commit info into project_record
         project_record[commit['child']] = commit
         # Update project_record.txt in each loop
-        with open(os.path.join(path_prefix, data_path, "project_record.txt"), "wb") as fp:
-            pickle.dump(project_record, fp)
+        # with open(os.path.join(path_prefix, data_path, "project_record.txt"), "wb") as fp:
+        #    pickle.dump(project_record, fp)
     # Finish all merge scenarios
     # Ensure workspace is empty
     clean_folder(os.path.join(path_prefix, workspace), logger)
 except IOError as e:
     # IO Exception occur
     print(str(e))
-    with open(os.path.join(path_prefix, data_path, "project_record.txt"), "wb") as fp:
-        pickle.dump(project_record, fp)
+    # with open(os.path.join(path_prefix, data_path, "project_record.txt"), "wb") as fp:
+    #    pickle.dump(project_record, fp)
 except Exception as e:
     # All other exceptions
     print(str(e))
-    with open(os.path.join(path_prefix, data_path, "project_record.txt"), "wb") as fp:
-        pickle.dump(project_record, fp)
+    # with open(os.path.join(path_prefix, data_path, "project_record.txt"), "wb") as fp:
+    #    pickle.dump(project_record, fp)
