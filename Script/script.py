@@ -148,6 +148,11 @@ def merge_with_AutoMerge(input_path, output_path):
                os.path.join(input_path, "right"))
 
 
+def merge_with_summer(repo, leftSha, rightSha, baseSha, output_path):
+	cmd = f'summer -C {repo} merge -l {leftSha} -r {rightSha} -b {baseSha} --worktree {output_path}'
+	runProcess(cmd)
+
+
 # merge two commits
 def git_merge(right_parent, logger):
     # Use git to merge left and right
@@ -444,6 +449,17 @@ if __name__ == '__main__':
         # Move the git-merge version into result folder
         shutil.move(os.path.join(path_prefix, workspace, 'git-merge'),
                     os.path.join(path_prefix, workspace, 'result'))
+
+			if '--summer' in sys.argv:
+				commit['summer_mergeable'] = True
+				try:
+					merge_with_summer(os.path.join(path_prefix, workspace, project_name),
+									  commit['left'], commit['right'], commit['base'],
+									  os.path.join(path_prefix, workspace, 'result', 'summer'))
+					commit['summer_solution_generation'] = True
+					logger.info("summer solution generated")
+				except:
+					commit['summer_solution_generation'] = False
         # If empty_file is True or file is not java file
         # skip JDime, IntelliMerge, AutoMerge, only keep FSTMerge
         if empty_file or not java_file_format:
