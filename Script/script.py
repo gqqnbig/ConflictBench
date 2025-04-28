@@ -460,44 +460,37 @@ if __name__ == '__main__':
 					logger.info("summer solution generated")
 				except:
 					commit['summer_solution_generation'] = False
-        # If empty_file is True or file is not java file
-        # skip JDime, IntelliMerge, AutoMerge, only keep FSTMerge
-        if empty_file or not java_file_format:
-            commit['FSTMerge_mergeable'] = True
-            commit['JDime_mergeable'] = False
-            commit['IntelliMerge_mergeable'] = False
-            commit['AutoMerge_mergeable'] = False
-            commit['FSTMerge_solution_generation'] = True
-            commit['JDime_solution_generation'] = False
-            commit['IntelliMerge_solution_generation'] = False
-            commit['AutoMerge_solution_generation'] = False
-            # Only Run FSTMerge tool
-            try:
-                merge_with_FSTMerge(os.path.join(path_prefix, workspace),
-                                                os.path.join(path_prefix, workspace, 'result', 'FSTMerge'), logger)
-                commit['FSTMerge_solution_generation'] = True
-                logger.info("FSTMerge solution generated")
-            except AbnormalBehaviourError as e:
-                commit['FSTMerge_solution_generation'] = False
-        else:
-            # Debug code
-            # logger.info("Skip processed index " + str(i) + "\tproject " + project_name + " commit " + commit['child'])
-            # # Update project_record.txt in each loop
-            # with open(os.path.join(path_prefix, data_path, "project_record.txt"), "wb") as fp:
-            #     pickle.dump(project_record, fp)
-            # continue
-            commit['FSTMerge_mergeable'] = True
-            commit['JDime_mergeable'] = True
-            commit['IntelliMerge_mergeable'] = True
-            commit['AutoMerge_mergeable'] = True
-            # Run 1st tool, FSTMerge
-            try:
-                merge_with_FSTMerge(os.path.join(path_prefix, workspace),
-                                                os.path.join(path_prefix, workspace, 'result', 'FSTMerge'), logger)
-                commit['FSTMerge_solution_generation'] = True
-                logger.info("FSTMerge solution generated")
-            except AbnormalBehaviourError as e:
-                commit['FSTMerge_solution_generation'] = False
+
+			if '--fst-merge' in sys.argv:
+				commit['FSTMerge_mergeable'] = True
+				try:
+					merge_with_FSTMerge(os.path.join(path_prefix, workspace),
+										os.path.join(path_prefix, workspace, 'result', 'FSTMerge'), logger)
+					commit['FSTMerge_solution_generation'] = True
+					logger.info("FSTMerge solution generated")
+				except AbnormalBehaviourError as e:
+					commit['FSTMerge_solution_generation'] = False
+
+			# If empty_file is True or file is not java file
+			# skip JDime, IntelliMerge, AutoMerge, only keep FSTMerge
+			if empty_file or not java_file_format:
+				commit['JDime_mergeable'] = False
+				commit['IntelliMerge_mergeable'] = False
+				commit['AutoMerge_mergeable'] = False
+				commit['FSTMerge_solution_generation'] = True
+				commit['JDime_solution_generation'] = False
+				commit['IntelliMerge_solution_generation'] = False
+				commit['AutoMerge_solution_generation'] = False
+			else:
+				# Debug code
+				# logger.info("Skip processed index " + str(i) + "\tproject " + project_name + " commit " + commit['child'])
+				# # Update project_record.txt in each loop
+				# with open(os.path.join(path_prefix, data_path, "project_record.txt"), "wb") as fp:
+				#     pickle.dump(project_record, fp)
+				# continue
+				commit['JDime_mergeable'] = True
+				commit['IntelliMerge_mergeable'] = True
+				commit['AutoMerge_mergeable'] = True
             # Run 2nd tool, JDime
             try:
                 merge_with_JDime(os.path.join(path_prefix, workspace),
