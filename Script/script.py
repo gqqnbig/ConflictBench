@@ -5,7 +5,7 @@ import sys
 import logging
 import shutil
 from pathlib import Path
-import pickle
+
 from git import Repo
 import subprocess
 
@@ -237,10 +237,6 @@ def createBranchVersion(folderName):
         exit(1)
 
 
-# Chose to continue experiment
-# resume_experiment = True
-resume_experiment = False
-
 # create logger to record complete info
 # create logger with 'script_logger'
 logger = logging.getLogger('textual_conflict_logger')
@@ -296,21 +292,9 @@ if __name__ == '__main__':
 			}
 			total_list.append(item)
 
-    # 
-    if(resume_experiment):
-        # Pick up where the previous experiment ends
-        # Read pickle project_record
-        if os.path.exists(os.path.join(path_prefix, data_path, "project_record.txt")) and \
-                os.path.isfile(os.path.join(path_prefix, data_path, "project_record.txt")):
-            with open(os.path.join(path_prefix, data_path, "project_record.txt"), "rb") as fp:
-                project_record = pickle.load(fp)
-        else:
-            # Cannot find the data file, report error
-            raise Exception("Cannot find project_record.txt")
-    else:
-        # Initiate project_record
-        project_record = {}
-        project_record['Current_Index'] = 0
+	# Initiate project_record
+	project_record = {}
+	project_record['Current_Index'] = 0
 
     num_list = len(total_list)
     for i in range(project_record['Current_Index'], num_list):
