@@ -220,6 +220,14 @@ def prepare_repo(local_path, project_url, sha):
     repo.git.checkout(sha, force=True)
     
 
+def on_rm_error(func, path, excinfo):
+	# path contains the path of the file that couldn't be removed
+	# let's just assume that it's read-only and unlink it.
+	if type(excinfo) is PermissionError and excinfo.errno == 13:
+		os.chmod(path, stat.S_IWRITE)
+		os.unlink(path)
+
+
 def createBranchVersion(project_name, folderName):
 	try:
 		dst = os.path.join(path_prefix, workspace, folderName)
