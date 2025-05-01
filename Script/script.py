@@ -243,6 +243,209 @@ def createBranchVersion(project_name, folderName):
 		exit(1)
 
 
+def processExample(example):
+	# Read merge scenario information
+	project_url = example['repo_url']
+	project_name = example['project_name']
+	commit = {}
+	commit['base'] = example['base_hash']
+	commit['left'] = example['left_hash']
+	commit['right'] = example['right_hash']
+	commit['child'] = example['child_hash']
+	file_path = example['conflicting_file']
+
+	os.chdir(os.path.join(path_prefix, workspace))
+	prepare_repo(os.path.join(path_prefix, workspace, project_name), project_url, commit['child'])
+
+	resultFolder = os.path.join(path_prefix, workspace, 'result')
+	if '--summer' in sys.argv:
+		shutil.rmtree(os.path.join(resultFolder, 'summer'), onexc=on_rm_error)
+		pathlib.Path(os.path.join(resultFolder, 'summer')).mkdir()
+		commit['summer_mergeable'] = True
+		try:
+			merge_with_summer(os.path.join(path_prefix, workspace, project_name),
+							  commit['left'], commit['right'], commit['base'],
+							  os.path.join(resultFolder, 'summer'))
+			commit['summer_solution_generation'] = True
+			logger.info("summer solution generated")
+		except:
+			commit['summer_solution_generation'] = False
+
+	exit(0)
+
+	createBranchVersion(project_name, 'base')
+	os.chdir(os.path.join(path_prefix, workspace, 'base'))
+	Repo(os.getcwd()).git.reset('--hard', commit['base'])
+	# git_reset_commit(commit['base'], logger)
+	# Except the conflicting file, remove all other files in base version
+	os.chdir(os.path.join(path_prefix, workspace, 'base'))
+	for filename in glob.glob("**", recursive=True):
+		if filename == file_path:
+			logger.info("Found same name file in base version")
+		if os.path.isfile(filename) and filename != file_path:
+			os.remove(filename)
+	logger.info("Complete deletion in base version")
+
+	createBranchVersion(project_name, 'left')
+	os.chdir(os.path.join(path_prefix, workspace, 'left'))
+	Repo(os.getcwd()).git.reset('--hard', commit['left'])
+	# git_reset_commit(commit['left'], logger)
+	# Except the conflicting file, remove all other files in left version
+	os.chdir(os.path.join(path_prefix, workspace, 'left'))
+	for filename in glob.glob("**", recursive=True):
+		if filename == file_path:
+			logger.info("Found same name file in left version")
+		if os.path.isfile(filename) and filename != file_path:
+			os.remove(filename)
+	logger.info("Complete deletion in left version")
+
+	createBranchVersion(project_name, 'right')
+	os.chdir(os.path.join(path_prefix, workspace, 'right'))
+	Repo(os.getcwd()).git.reset('--hard', commit['right'])
+	# git_reset_commit(commit['right'], logger)
+	# Except the conflicting file, remove all other files in right version
+	os.chdir(os.path.join(path_prefix, workspace, 'right'))
+	for filename in glob.glob("**", recursive=True):
+		if filename == file_path:
+			logger.info("Found same name file in right version")
+		if os.path.isfile(filename) and filename != file_path:
+			os.remove(filename)
+	logger.info("Complete deletion in right version")
+
+	createBranchVersion(project_name, 'child')
+	os.chdir(os.path.join(path_prefix, workspace, 'child'))
+	Repo(os.getcwd()).git.reset('--hard', commit['child'])
+	# git_reset_commit(commit['child'], logger)
+	# Except the conflicting file, remove all other files in child version
+	os.chdir(os.path.join(path_prefix, workspace, 'child'))
+	for filename in glob.glob("**", recursive=True):
+		if filename == file_path:
+			logger.info("Found same name file in child version")
+		if os.path.isfile(filename) and filename != file_path:
+			os.remove(filename)
+	logger.info("Complete deletion in child version")
+	# Run git-merge to get the git-merge version
+	# Make a copy and change to left version
+
+	createBranchVersion(project_name, 'git-merge')
+	os.chdir(os.path.join(path_prefix, workspace, 'git-merge'))
+	# Reset to left version first
+	Repo(os.getcwd()).git.reset('--hard', commit['left'])
+	# git_reset_commit(commit['left'], logger)
+	# Try to merge with right version
+	git_merge(commit['right'], logger)
+	# Except the conflicting file, remove all other files in git-merge version
+	os.chdir(os.path.join(path_prefix, workspace, 'git-merge'))
+	for filename in glob.glob("**", recursive=True):
+		if filename == file_path:
+			logger.info("Found same name file in git-merge version")
+		if os.path.isfile(filename) and filename != file_path:
+			os.remove(filename)
+	logger.info("Complete deletion in git-merge version")
+	# Check whether input is java file
+	if file_path.endswith('java'):
+		java_file_format = True
+		logger.info("conflict file is java file")
+	else:
+		java_file_format = False
+		logger.info("conflict file is not java file")
+	# Check whether base/left/right versions have the corresponding file to merge
+	empty_file = False
+	# Check base version
+	if not os.path.exists(os.path.join(path_prefix, workspace, "base", file_path)):
+		logger.info("Cannot find corresponding file in base version, skip multiple tools")
+		empty_file = True
+	elif not os.path.isfile(os.path.join(path_prefix, workspace, "base", file_path)):
+		logger.error("Wrong conflicting file path in base version, refer to a folder")
+		raise Exception("Wrong conflicting file path in base version, refer to a folder")
+	# Check left version
+	if not os.path.exists(os.path.join(path_prefix, workspace, "left", file_path)):
+		logger.info("Cannot find corresponding file in left version, skip multiple tools")
+		empty_file = True
+	elif not os.path.isfile(os.path.join(path_prefix, workspace, "left", file_path)):
+		logger.error("Wrong conflicting file path in left version, refer to a folder")
+		raise Exception("Wrong conflicting file path in left version, refer to a folder")
+	# Check right version
+	if not os.path.exists(os.path.join(path_prefix, workspace, "right", file_path)):
+		logger.info("Cannot find corresponding file in right version, skip multiple tools")
+		empty_file = True
+	elif not os.path.isfile(os.path.join(path_prefix, workspace, "right", file_path)):
+		logger.error("Wrong conflicting file path in right version, refer to a folder")
+		raise Exception("Wrong conflicting file path in right version, refer to a folder")
+	# Create result folder
+	if os.path.exists(resultFolder):
+		# Indicate previous clean up work is not completed
+		logger.error("Found existing result folder. Clean up work not finished")
+		shutil.rmtree(resultFolder, onexc=on_rm_error)
+	pathlib.Path(resultFolder).mkdir()
+
+	# Move the child version into result folder
+	shutil.move(os.path.join(path_prefix, workspace, 'child'),
+				resultFolder)
+	# Move the git-merge version into result folder
+	shutil.move(os.path.join(path_prefix, workspace, 'git-merge'),
+				resultFolder)
+
+	if '--fst-merge' in sys.argv:
+		pathlib.Path(os.path.join(resultFolder, 'FSTMerge')).mkdir()
+		commit['FSTMerge_mergeable'] = True
+		try:
+			merge_with_FSTMerge(os.path.join(path_prefix, workspace),
+								os.path.join(resultFolder, 'FSTMerge'), logger)
+			commit['FSTMerge_solution_generation'] = True
+			logger.info("FSTMerge solution generated")
+		except AbnormalBehaviourError as e:
+			commit['FSTMerge_solution_generation'] = False
+
+	# If empty_file is True or file is not java file
+	# skip JDime, IntelliMerge, AutoMerge, only keep FSTMerge
+	if empty_file or not java_file_format:
+		commit['JDime_mergeable'] = False
+		commit['IntelliMerge_mergeable'] = False
+		commit['AutoMerge_mergeable'] = False
+		commit['FSTMerge_solution_generation'] = True
+		commit['JDime_solution_generation'] = False
+		commit['IntelliMerge_solution_generation'] = False
+		commit['AutoMerge_solution_generation'] = False
+	else:
+		# Debug code
+		# logger.info("Skip processed index " + str(i) + "\tproject " + project_name + " commit " + commit['child'])
+		# # Update project_record.txt in each loop
+		# with open(os.path.join(path_prefix, data_path, "project_record.txt"), "wb") as fp:
+		#     pickle.dump(project_record, fp)
+		# continue
+		commit['JDime_mergeable'] = True
+		commit['IntelliMerge_mergeable'] = True
+
+		if '--auto-merge' in sys.argv:
+			pathlib.Path(os.path.join(resultFolder, 'AutoMerge')).mkdir()
+			commit['AutoMerge_mergeable'] = True
+			try:
+				merge_with_AutoMerge(os.path.join(path_prefix, workspace),
+									 os.path.join(resultFolder, 'AutoMerge'))
+				commit['AutoMerge_solution_generation'] = True
+				logger.info("AutoMerge solution generated")
+			except AbnormalBehaviourError as e:
+				commit['AutoMerge_solution_generation'] = False
+
+	pathlib.Path(os.path.join(resultFolder, 'JDime')).mkdir()
+	pathlib.Path(os.path.join(resultFolder, 'IntelliMerge')).mkdir()
+	logger.info("Complete processing index " + str(i) + "\tproject " + project_name + " commit " + commit['child'])
+
+	# Move the base version into result folder
+	shutil.move(os.path.join(path_prefix, workspace, 'base'), resultFolder)
+	# Move the left version into result folder
+	shutil.move(os.path.join(path_prefix, workspace, 'left'), resultFolder)
+	# Move the right version into result folder
+	shutil.move(os.path.join(path_prefix, workspace, 'right'), resultFolder)
+	# Move the entire result folder into output folder
+	# Make sure corresponding folder doesn't exist to ensure the behavior of shutil.move()
+	if os.path.exists(os.path.join(path_prefix, output_path, project_name, commit['child'])):
+		shutil.rmtree(os.path.join(path_prefix, output_path, project_name, commit['child']))
+	shutil.move(resultFolder, os.path.join(path_prefix, output_path, project_name, commit['child']))
+	# Add commit info into project_record
+	project_record[commit['child']] = commit
+
 
 # create logger to record complete info
 # create logger with 'script_logger'
@@ -299,245 +502,6 @@ if __name__ == '__main__':
 			}
 			total_list.append(item)
 
-	# Initiate project_record
-	project_record = {}
-	project_record['Current_Index'] = 0
-
-    num_list = len(total_list)
-    for i in range(project_record['Current_Index'], num_list):
-        # Read merge scenario information
-        project_url = total_list[i]['repo_url']
-        project_name = total_list[i]['project_name']
-        commit = {}
-        commit['base'] = total_list[i]['base_hash']
-        commit['left'] = total_list[i]['left_hash']
-        commit['right'] = total_list[i]['right_hash']
-        commit['child'] = total_list[i]['child_hash']
-        file_path = total_list[i]['conflicting_file']
-        project_record['Current_Index'] = i
-        logger.info("Start processing index " + str(i) + "\tproject " + project_name + " commit " + commit['child'])
-
-        
-        os.chdir(os.path.join(path_prefix, workspace))
-        prepare_repo(os.path.join(path_prefix, workspace, project_name), project_url, commit['child'])
-
-        createBranchVersion('base')
-        os.chdir(os.path.join(path_prefix, workspace, 'base'))
-        Repo(os.getcwd()).git.reset('--hard', commit['base'])
-        # git_reset_commit(commit['base'], logger)
-        # Except the conflicting file, remove all other files in base version
-        os.chdir(os.path.join(path_prefix, workspace, 'base'))
-        for filename in glob.glob("**", recursive=True):
-            if filename == file_path:
-                logger.info("Found same name file in base version")
-            if os.path.isfile(filename) and filename != file_path:
-                os.remove(filename)
-        logger.info("Complete deletion in base version")
-
-        createBranchVersion('left')
-        os.chdir(os.path.join(path_prefix, workspace, 'left'))
-        Repo(os.getcwd()).git.reset('--hard', commit['left'])
-        # git_reset_commit(commit['left'], logger)
-        # Except the conflicting file, remove all other files in left version
-        os.chdir(os.path.join(path_prefix, workspace, 'left'))
-        for filename in glob.glob("**", recursive=True):
-            if filename == file_path:
-                logger.info("Found same name file in left version")
-            if os.path.isfile(filename) and filename != file_path:
-                os.remove(filename)
-        logger.info("Complete deletion in left version")
-
-        createBranchVersion('right')
-        os.chdir(os.path.join(path_prefix, workspace, 'right'))
-        Repo(os.getcwd()).git.reset('--hard', commit['right'])
-        # git_reset_commit(commit['right'], logger)
-        # Except the conflicting file, remove all other files in right version
-        os.chdir(os.path.join(path_prefix, workspace, 'right'))
-        for filename in glob.glob("**", recursive=True):
-            if filename == file_path:
-                logger.info("Found same name file in right version")
-            if os.path.isfile(filename) and filename != file_path:
-                os.remove(filename)
-        logger.info("Complete deletion in right version")
-
-        createBranchVersion('child')
-        os.chdir(os.path.join(path_prefix, workspace, 'child'))
-        Repo(os.getcwd()).git.reset('--hard', commit['child'])
-        # git_reset_commit(commit['child'], logger)
-        # Except the conflicting file, remove all other files in child version
-        os.chdir(os.path.join(path_prefix, workspace, 'child'))
-        for filename in glob.glob("**", recursive=True):
-            if filename == file_path:
-                logger.info("Found same name file in child version")
-            if os.path.isfile(filename) and filename != file_path:
-                os.remove(filename)
-        logger.info("Complete deletion in child version")
-        # Run git-merge to get the git-merge version
-        # Make a copy and change to left version
-
-        createBranchVersion('git-merge')
-        os.chdir(os.path.join(path_prefix, workspace, 'git-merge'))
-        # Reset to left version first
-        Repo(os.getcwd()).git.reset('--hard', commit['left'])
-        # git_reset_commit(commit['left'], logger)
-        # Try to merge with right version
-        git_merge(commit['right'], logger)
-        # Except the conflicting file, remove all other files in git-merge version
-        os.chdir(os.path.join(path_prefix, workspace, 'git-merge'))
-        for filename in glob.glob("**", recursive=True):
-            if filename == file_path:
-                logger.info("Found same name file in git-merge version")
-            if os.path.isfile(filename) and filename != file_path:
-                os.remove(filename)
-        logger.info("Complete deletion in git-merge version")
-        # Check whether input is java file
-        if file_path.endswith('java'):
-            java_file_format = True
-            logger.info("conflict file is java file")
-        else:
-            java_file_format = False
-            logger.info("conflict file is not java file")
-        # Check whether base/left/right versions have the corresponding file to merge
-        empty_file = False
-        # Check base version
-        if not os.path.exists(os.path.join(path_prefix, workspace, "base", file_path)):
-            logger.info("Cannot find corresponding file in base version, skip multiple tools")
-            empty_file = True
-        elif not os.path.isfile(os.path.join(path_prefix, workspace, "base", file_path)):
-            logger.error("Wrong conflicting file path in base version, refer to a folder")
-            raise Exception("Wrong conflicting file path in base version, refer to a folder")
-        # Check left version
-        if not os.path.exists(os.path.join(path_prefix, workspace, "left", file_path)):
-            logger.info("Cannot find corresponding file in left version, skip multiple tools")
-            empty_file = True
-        elif not os.path.isfile(os.path.join(path_prefix, workspace, "left", file_path)):
-            logger.error("Wrong conflicting file path in left version, refer to a folder")
-            raise Exception("Wrong conflicting file path in left version, refer to a folder")
-        # Check right version
-        if not os.path.exists(os.path.join(path_prefix, workspace, "right", file_path)):
-            logger.info("Cannot find corresponding file in right version, skip multiple tools")
-            empty_file = True
-        elif not os.path.isfile(os.path.join(path_prefix, workspace, "right", file_path)):
-            logger.error("Wrong conflicting file path in right version, refer to a folder")
-            raise Exception("Wrong conflicting file path in right version, refer to a folder")
-        # Create result folder
-        if not os.path.exists(os.path.join(path_prefix, workspace, 'result')):
-            Path(os.path.join(path_prefix, workspace, 'result')).mkdir()
-        else:
-            # Indicate previous clean up work is not completed
-            logger.error("Found existing result folder. Clean up work not finished")
-            shutil.rmtree(os.path.join(path_prefix, workspace, 'result'))
-            # Create result folder again
-            Path(os.path.join(path_prefix, workspace, 'result')).mkdir()
-        
-        Path(os.path.join(path_prefix, workspace, 'result', 'JDime')).mkdir()
-        Path(os.path.join(path_prefix, workspace, 'result', 'AutoMerge')).mkdir()
-        Path(os.path.join(path_prefix, workspace, 'result', 'IntelliMerge')).mkdir()
-        Path(os.path.join(path_prefix, workspace, 'result', 'FSTMerge')).mkdir()
-        # Move the child version into result folder
-        shutil.move(os.path.join(path_prefix, workspace, 'child'),                    
-                    os.path.join(path_prefix, workspace, 'result'))
-        # Move the git-merge version into result folder
-        shutil.move(os.path.join(path_prefix, workspace, 'git-merge'),
-                    os.path.join(path_prefix, workspace, 'result'))
-
-			if '--summer' in sys.argv:
-				commit['summer_mergeable'] = True
-				try:
-					merge_with_summer(os.path.join(path_prefix, workspace, project_name),
-									  commit['left'], commit['right'], commit['base'],
-									  os.path.join(path_prefix, workspace, 'result', 'summer'))
-					commit['summer_solution_generation'] = True
-					logger.info("summer solution generated")
-				except:
-					commit['summer_solution_generation'] = False
-
-			if '--fst-merge' in sys.argv:
-				commit['FSTMerge_mergeable'] = True
-				try:
-					merge_with_FSTMerge(os.path.join(path_prefix, workspace),
-										os.path.join(path_prefix, workspace, 'result', 'FSTMerge'), logger)
-					commit['FSTMerge_solution_generation'] = True
-					logger.info("FSTMerge solution generated")
-				except AbnormalBehaviourError as e:
-					commit['FSTMerge_solution_generation'] = False
-
-			# If empty_file is True or file is not java file
-			# skip JDime, IntelliMerge, AutoMerge, only keep FSTMerge
-			if empty_file or not java_file_format:
-				commit['JDime_mergeable'] = False
-				commit['IntelliMerge_mergeable'] = False
-				commit['AutoMerge_mergeable'] = False
-				commit['FSTMerge_solution_generation'] = True
-				commit['JDime_solution_generation'] = False
-				commit['IntelliMerge_solution_generation'] = False
-				commit['AutoMerge_solution_generation'] = False
-			else:
-				# Debug code
-				# logger.info("Skip processed index " + str(i) + "\tproject " + project_name + " commit " + commit['child'])
-				# # Update project_record.txt in each loop
-				# with open(os.path.join(path_prefix, data_path, "project_record.txt"), "wb") as fp:
-				#     pickle.dump(project_record, fp)
-				# continue
-				commit['JDime_mergeable'] = True
-				commit['IntelliMerge_mergeable'] = True
-				commit['AutoMerge_mergeable'] = True
-            # Run 2nd tool, JDime
-            try:
-                merge_with_JDime(os.path.join(path_prefix, workspace),
-                                             os.path.join(path_prefix, workspace, 'result', 'JDime'), 1, logger)
-                commit['JDime_solution_generation'] = True
-                logger.info("JDime solution generated")
-            except AbnormalBehaviourError as e:
-                commit['JDime_solution_generation'] = False
-            # Run 3rd tool, IntelliMerge
-            try:
-                merge_with_IntelliMerge(os.path.join(path_prefix, workspace),
-                                                    os.path.join(path_prefix, workspace, 'result', 'IntelliMerge'), logger)
-                commit['IntelliMerge_solution_generation'] = True
-                logger.info("IntelliMerge solution generated")
-            except AbnormalBehaviourError as e:
-                commit['IntelliMerge_solution_generation'] = False
-            # Run 4th tool, AutoMerge
-            try:
-                merge_with_AutoMerge(os.path.join(path_prefix, workspace),
-                                                 os.path.join(path_prefix, workspace, 'result', 'AutoMerge'), logger)
-                commit['AutoMerge_solution_generation'] = True
-                logger.info("AutoMerge solution generated")
-            except AbnormalBehaviourError as e:
-                commit['AutoMerge_solution_generation'] = False
-        logger.info("Complete processing index " + str(i) + "\tproject " + project_name + " commit " + commit['child'])
-        
-        # Move the base version into result folder
-        shutil.move(os.path.join(path_prefix, workspace, 'base'),                    
-                    os.path.join(path_prefix, workspace, 'result'))
-        # Move the left version into result folder
-        shutil.move(os.path.join(path_prefix, workspace, 'left'),                    
-                    os.path.join(path_prefix, workspace, 'result'))
-        # Move the right version into result folder
-        shutil.move(os.path.join(path_prefix, workspace, 'right'),                    
-                    os.path.join(path_prefix, workspace, 'result'))
-        # Move the entire result folder into output folder
-        # Make sure corresponding folder doesn't exist to ensure the behavior of shutil.move()
-        if os.path.exists(os.path.join(path_prefix, output_path, project_name, commit['child'])):
-            shutil.rmtree(os.path.join(path_prefix, output_path, project_name, commit['child']))
-        shutil.move(os.path.join(path_prefix, workspace, 'result'),
-                    os.path.join(path_prefix, output_path, project_name, commit['child']))
-        # Add commit info into project_record
-        project_record[commit['child']] = commit
-        # Update project_record.txt in each loop
-        # with open(os.path.join(path_prefix, data_path, "project_record.txt"), "wb") as fp:
-        #    pickle.dump(project_record, fp)
-    # Finish all merge scenarios
-    # Ensure workspace is empty
-    clean_folder(os.path.join(path_prefix, workspace), logger)
-except IOError as e:
-    # IO Exception occur
-    print(str(e))
-    # with open(os.path.join(path_prefix, data_path, "project_record.txt"), "wb") as fp:
-    #    pickle.dump(project_record, fp)
-except Exception as e:
-    # All other exceptions
-    print(str(e))
-    # with open(os.path.join(path_prefix, data_path, "project_record.txt"), "wb") as fp:
-    #    pickle.dump(project_record, fp)
+	for i in range(len(total_list)):
+		logger.info("Start processing index " + str(i) + "\tproject " + total_list[i]['project_name'] + " commit " + total_list[i]['child_hash'])
+		processExample(total_list[i])
