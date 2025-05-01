@@ -220,21 +220,20 @@ def prepare_repo(local_path, project_url, sha):
     repo.git.checkout(sha, force=True)
     
 
-def createBranchVersion(folderName):
-    try:
-        # Generate four versions in workspace
-        # Make a copy and change to base version
-        shutil.copytree(os.path.join(path_prefix, workspace, project_name),
-                        os.path.join(path_prefix, workspace, folderName),
-                        symlinks=True)
-    except shutil.Error as e:
-        print(f'Error in creating the {folderName} folder:', file=sys.stderr)
-        for arg in e.args[0]:
-            print(arg[2], file=sys.stderr)
-        exit(1)
-    except IOError as e:
-        print(f'Error in creating the {folderName} folder: ' + str(e), file=sys.stderr)
-        exit(1)
+def createBranchVersion(project_name, folderName):
+	try:
+		dst = os.path.join(path_prefix, workspace, folderName)
+		shutil.rmtree(dst, onexc=on_rm_error)
+		shutil.copytree(os.path.join(path_prefix, workspace, project_name), dst, symlinks=True)
+	except shutil.Error as e:
+		print(f'Error in creating the {folderName} folder:', file=sys.stderr)
+		for arg in e.args[0]:
+			print(arg[2], file=sys.stderr)
+		exit(1)
+	except IOError as e:
+		print(f'Error in creating the {folderName} folder: ' + str(e), file=sys.stderr)
+		exit(1)
+
 
 
 # create logger to record complete info
