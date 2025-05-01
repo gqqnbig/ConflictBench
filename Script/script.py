@@ -5,6 +5,7 @@ import sys
 import logging
 import shutil
 from pathlib import Path
+from logging import StreamHandler
 
 from git import Repo
 import subprocess
@@ -459,17 +460,23 @@ if __name__ == '__main__':
 	except:
 		path_prefix = pathlib.Path(__file__).parent.parent.resolve()
 
-	# create file handler which logs even debug messages
-	if os.path.isdir(os.path.join(path_prefix, logger_path)) == False:
-		raise Exception("Path " + os.path.join(path_prefix, logger_path) + " does not exist.")
-	fh = logging.FileHandler(os.path.join(path_prefix, logger_path, 'textual_conflict.log'))
-	# fh = logging.FileHandler('script.log')
-	fh.setLevel(logging.INFO)
-	# create formatter and add it to the handlers
+
 	formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-	fh.setFormatter(formatter)
-	# add the handlers to the logger
-	logger.addHandler(fh)
+	try:
+		i = sys.argv.index('--log-file')
+		logger_path = sys.argv[i + 1]
+		fh = logging.FileHandler(logger_path)
+		fh.setLevel(logging.INFO)
+		# create formatter and add it to the handlers
+		fh.setFormatter(formatter)
+		# add the handlers to the logger
+		logger.addHandler(fh)
+	except:
+		pass
+
+	streamHandler = logging.StreamHandler()
+	streamHandler.setFormatter(formatter)
+	logger.addHandler(streamHandler)
 
 	try:
 		i = sys.argv.index('--total_list')
