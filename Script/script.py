@@ -25,7 +25,8 @@ MAX_WAITINGTIME_MERGE = 5 * 60
 MAX_WAITINGTIME_CLONE = 10 * 60
 MAX_WAITINGTIME_MERGE_BASE = 1 * 60
 MAX_WAITINGTIME_RESET = 5 * 60
-MAX_WAITINGTIME_RESTORE = 1*60
+# maximum waiting time to resolve a merge conflict.
+MAX_WAITINGTIME_RESOLVE = 1 * 60
 MAX_WAITINGTIME_DIFF = 5*60
 MAX_WAITINGTIME_LOG = 5*60
 MAX_WAITINGTIME_COMPILE = 5*60
@@ -55,7 +56,7 @@ def merge_with_JDime(input_path, output_path, mode, logger):
                                 os.path.join(input_path, "base") + " " +
                                 os.path.join(input_path, "right"),
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESTORE)
+		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
         if proc.returncode == 0:
             # Update logger
             logger.info("Finish JDime")
@@ -77,7 +78,7 @@ def merge_with_JDime(input_path, output_path, mode, logger):
 def runProcess(cmd):
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
     try:
-        outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESTORE)
+		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
         if proc.returncode != 0:
             # Failed to run JDime
             logger.info("Fail to run '" + cmd + "' in shell: " + errs)
@@ -121,7 +122,7 @@ def merge_with_IntelliMerge(input_path, output_path, logger):
                                 os.path.join(input_path, "right") + " " +
                                 "-o " + output_path,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESTORE)
+		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
         if proc.returncode == 0:
             # Update logger
             logger.info("Finish IntelliMerge")
