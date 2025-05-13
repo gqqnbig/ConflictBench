@@ -18,6 +18,7 @@ FSTMerge_executable_path = 'MergeTools/FSTMerge/featurehouse_20220107.jar'
 JDime_executable_path = 'MergeTools/JDime/bin/JDime'
 IntelliMerge_executable_path = 'MergeTools/IntelliMerge/IntelliMerge-1.0.9-all.jar'
 AutoMerge_executable_path = 'MergeTools/AutoMerge/AutoMerge.jar'
+summerPath = None
 
 # Set constant
 # Set the longest waiting time to wait for a task to execute (Unit: minutes)
@@ -151,7 +152,7 @@ def merge_with_AutoMerge(input_path, output_path):
 
 
 def merge_with_summer(repo, leftSha, rightSha, baseSha, output_path):
-	cmd = f'summer -C {repo} merge -l {leftSha} -r {rightSha} -b {baseSha} --worktree {output_path}'
+	cmd = f'{summerPath} merge -C {repo} -l {leftSha} -r {rightSha} -b {baseSha} --worktree {output_path}'
 	runProcess(cmd)
 
 
@@ -461,6 +462,19 @@ if __name__ == '__main__':
 	except:
 		path_prefix = pathlib.Path(__file__).parent.parent.resolve()
 
+	runSummer = False
+	for opt in sys.argv:
+		if opt.startswith('--summer='):
+			summerPath = opt[len('--summer='):]
+			if not os.path.isfile(summerPath):
+				print(f'The path to the summer executable "{summerPath}" is not valid.', file=sys.stderr)
+				exit(1)
+			runSummer = True
+			break
+	if summerPath is None:
+		summerPath = 'summer'
+	if runSummer is False:
+		runSummer = '--summer' in sys.argv
 
 	formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 	try:
