@@ -456,6 +456,20 @@ logger = logging.getLogger('textual_conflict_logger')
 logger.setLevel(logging.INFO)
 
 if __name__ == '__main__':
+	if '--help' in sys.argv:
+		print('''
+{0}
+
+--help	show this help.
+--log-file	specify the path of a log file. If this option is missing, log is not written to disk.
+--path-prefix	the directory of ConflictBench. If this option is missing, the path is the parent of parent folder of {0}, which is {1}.
+--total_list	the path to the file containing all examples. If this option is missing, the path is derived from --path-prefix.
+
+--summer=`path`	run the summer tool located at `path`.
+--summer	run the summer tool. The summer executable is expected to be found in the PATH environment variable.		
+'''.format(sys.argv[0], pathlib.Path(__file__).parent.parent.resolve()))
+		exit(0)
+
 	try:
 		i = sys.argv.index('--path-prefix')
 		path_prefix = sys.argv[i + 1]
