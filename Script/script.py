@@ -4,11 +4,13 @@ import os
 import sys
 import logging
 import shutil
+import subprocess
 from pathlib import Path
 from logging import StreamHandler
 
 from git import Repo
-import subprocess
+
+import ProcessUtils
 
 # Set path
 workspace = 'Resource/workspace'
@@ -74,21 +76,6 @@ def merge_with_JDime(input_path, output_path, mode, logger):
         raise AbnormalBehaviourError("Fail to run JDime in time")
     finally:
         pass
-
-
-def runProcess(cmd):
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
-    try:
-		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
-        if proc.returncode != 0:
-            # Failed to run JDime
-            logger.info("Fail to run '" + cmd + "' in shell: " + errs)
-            raise AbnormalBehaviourError("Fail to run '" + cmd + "' in shell: " + errs)
-    except subprocess.TimeoutExpired:
-        # Terminate the unfinished process
-        proc.terminate()
-        logger.error(f'{cmd} does not finish in time')
-        raise AbnormalBehaviourError(f'{cmd} does not finish in time')
 
 
 def merge_with_FSTMerge(input_path, output_path, logger):
