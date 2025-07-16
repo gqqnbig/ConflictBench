@@ -10,6 +10,7 @@ from logging import StreamHandler
 
 from git import Repo
 
+import optionUtils
 import ProcessUtils
 
 # Set path
@@ -451,6 +452,7 @@ if __name__ == '__main__':
 --log-file	specify the path of a log file. If this option is missing, log is not written to disk.
 --path-prefix	the directory of ConflictBench. If this option is missing, the path is the parent of parent folder of {0}, which is {1}.
 --total_list	the path to the file containing all examples. If this option is missing, the path is derived from --path-prefix.
+--range	n1..n2	run experiments against examples from n1, inclusive to n2, exclusive. n1 starts at 0. If this option is missing, run all examples.
 
 --summer=`path`	run the summer tool located at `path`.
 --summer	run the summer tool. The summer executable is expected to be found in the PATH environment variable.		
@@ -494,37 +496,10 @@ if __name__ == '__main__':
 	streamHandler.setFormatter(formatter)
 	logger.addHandler(streamHandler)
 
-	try:
-		i = sys.argv.index('--total_list')
-		totalListPath = sys.argv[i + 1]
-	except:
-		totalListPath = os.path.join(path_prefix, 'Data', "total_list.txt")
+	opt = optionUtils.Options()
+	opt.LoadDataset()
+	opt.LoadRange()
 
-	if not os.path.isfile(totalListPath):
-		print(f'The list of example files is not at {totalListPath}.', file=sys.stderr)
-		print('Use option --path-prefix to specify the path prefix.', file=sys.stderr)
-		print('Use option --total_list to directly specify the path to total_list.txt.', file=sys.stderr)
-		exit(1)
-
-	# Read total_list
-	with open(totalListPath, 'r') as f:
-		lines = f.readlines()
-		total_list = []
-		for line in lines:
-			parts = line.split('\t')
-			# Create a dictionary for each line
-			item = {
-				'repo_url': parts[0],
-				'project_name': parts[1],
-				'child_hash': parts[2],  # merge hash
-				'left_hash': parts[3],
-				'right_hash': parts[4],
-				'base_hash': parts[5],
-				'conflicting_file': parts[6].strip(),
-				# Use strip to remove the newline character at the end of each line
-			}
-			total_list.append(item)
-
-	for i in range(len(total_list)):
-		logger.info("Start processing index " + str(i) + "\tproject " + total_list[i]['project_name'] + " commit " + total_list[i]['child_hash'])
-		processExample(total_list[i])
+	for i in opt.evaluationRange:
+		logger.info("Start processing index " + str(i) + "\tproject " + opt.dataset[i]['project_name'] + " commit " + opt.dataset[i]['child_hash'])
+		processExample(opt.dataset[i])
