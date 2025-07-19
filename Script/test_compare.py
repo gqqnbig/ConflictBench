@@ -6,7 +6,17 @@ import compare
 
 def test_normalizeFile():
 	sampleFile = tempfile.NamedTemporaryFile(delete_on_close=False)
-	sampleFile.write(b'import b;\nimport a;\n')
+	lines = [
+		b'//preamble\n',
+		b'\n',
+		b'import b;\n',
+		b'\n',
+		b'import a;\n',
+		b'\n',
+		b'after\n',
+		b'\n',
+	]
+	sampleFile.writelines(lines)
 	sampleFile.close()
 
 	outputFile = tempfile.NamedTemporaryFile(delete_on_close=False)
@@ -16,7 +26,14 @@ def test_normalizeFile():
 		fileContent = f.read()
 	outputFile.close()
 
-	assert fileContent == 'import a;\nimport b;\n'
+	p1 = fileContent.find('//preamble')
+	assert p1 != -1
+
+	p2 = fileContent.find('import a;\nimport b;', p1)
+	assert p2 != -1
+
+	p3 = fileContent.find('after', p2)
+	assert p3 != -1
 
 	os.unlink(sampleFile.name)
 	os.unlink(outputFile.name)
