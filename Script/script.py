@@ -10,6 +10,7 @@ from logging import StreamHandler
 
 from git import Repo
 
+import dataset
 import optionUtils
 import ProcessUtils
 
@@ -234,35 +235,36 @@ def createBranchVersion(project_name, folderName):
 		exit(1)
 
 
-def processExample(example):
+def processExample(subjectRepo: dataset.SubjectRepo):
 	# Read merge scenario information
-	project_url = example['repo_url']
-	project_name = example['project_name']
-	commit = {}
-	commit['base'] = example['base_hash']
-	commit['left'] = example['left_hash']
-	commit['right'] = example['right_hash']
-	commit['child'] = example['child_hash']
-	file_path = example['conflicting_file']
+	# project_url = example['repo_url']
+	# project_name = example['project_name']
+	# commit = {}
+	# commit['base'] = example['base_hash']
+	# commit['left'] = example['left_hash']
+	# commit['right'] = example['right_hash']
+	# commit['child'] = example['child_hash']
+	# file_path = example['conflicting_file']
 
 	os.chdir(os.path.join(path_prefix, workspace))
-	prepare_repo(os.path.join(path_prefix, workspace, project_name), project_url, commit['child'])
+	prepare_repo(os.path.join(path_prefix, workspace, subjectRepo.repoName), subjectRepo.repoUrl, subjectRepo.mergeCommit)
 
 	resultFolder = os.path.join(path_prefix, workspace, 'result')
-	if '--summer' in sys.argv:
-		shutil.rmtree(os.path.join(resultFolder, 'summer'), onexc=on_rm_error)
-		pathlib.Path(os.path.join(resultFolder, 'summer')).mkdir()
-		commit['summer_mergeable'] = True
+	pathlib.Path(resultFolder).mkdir(exist_ok=True)
+	if runSummer:
+		pathlib.Path(os.path.join(resultFolder, 'summer')).mkdir(exist_ok=True)
+		# commit['summer_mergeable'] = True
 		try:
-			merge_with_summer(os.path.join(path_prefix, workspace, project_name),
-							  commit['left'], commit['right'], commit['base'],
-							  os.path.join(resultFolder, 'summer'))
-			commit['summer_solution_generation'] = True
+			merge_with_summer(os.path.join(path_prefix, workspace, subjectRepo.repoName),
+							  subjectRepo.leftCommit, subjectRepo.rightCommit, subjectRepo.baseCommit,
+							  os.path.join(resultFolder, 'summer', subjectRepo.repoName), subjectRepo.conflictingFile, subjectRepo.getMergedFile(os.path.join(path_prefix, workspace)))
+			# commit['summer_solution_generation'] = True
 			logger.info("summer solution generated")
-		except:
-			commit['summer_solution_generation'] = False
+		except Exception as e:
+			# commit['summer_solution_generation'] = False
+			pass
 
-	exit(0)
+	return
 
 	createBranchVersion(project_name, 'base')
 	os.chdir(os.path.join(path_prefix, workspace, 'base'))
@@ -501,5 +503,5 @@ if __name__ == '__main__':
 	opt.LoadRange()
 
 	for i in opt.evaluationRange:
-		logger.info("Start processing index " + str(i) + "\tproject " + opt.dataset[i]['project_name'] + " commit " + opt.dataset[i]['child_hash'])
+		logger.info("Start processing index " + str(i) + "\tproject " + opt.dataset[i].repoName + " commit " + opt.dataset[i].mergeCommit)
 		processExample(opt.dataset[i])

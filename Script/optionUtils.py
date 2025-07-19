@@ -1,9 +1,14 @@
 import os
 import pathlib
 import sys
+import typing
+
+import dataset
 
 
 class Options:
+	dataset: typing.List[dataset.SubjectRepo]
+
 	def __init__(self):
 		self.dataset = None
 		self.evaluationRange = None
@@ -29,18 +34,17 @@ class Options:
 			lines = f.readlines()
 			total_list = []
 			for line in lines:
-				parts = line.split('\t')
+				parts = line.strip().split('\t')
 				# Create a dictionary for each line
-				item = {
-					'repo_url': parts[0],
-					'project_name': parts[1],
-					'child_hash': parts[2],  # merge hash
-					'left_hash': parts[3],
-					'right_hash': parts[4],
-					'base_hash': parts[5],
-					'conflicting_file': parts[6].strip(),
-					# Use strip to remove the newline character at the end of each line
-				}
+				item = dataset.SubjectRepo()
+				item.repoUrl = parts[0]
+				item.repoName = parts[1]
+				item.mergeCommit = parts[2]
+				item.leftCommit = parts[3]
+				item.rightCommit = parts[4]
+				item.baseCommit = parts[5]
+				item.conflictingFile = parts[6]
+
 				total_list.append(item)
 
 		self.dataset = total_list
