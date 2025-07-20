@@ -10,17 +10,19 @@ import optionUtils
 
 
 def diff_BaseToLeft(folder, repo: dataset.SubjectRepo):
-	subprocess.run([r'C:\Program Files\TortoiseGit\bin\TortoiseGitProc.exe', '/command:showcompare',
-					'/revision1:' + repo.baseCommit,
-					'/revision2:' + repo.leftCommit],
-				   cwd=folder)
+	subprocess.Popen([r'C:\Program Files\TortoiseGit\bin\TortoiseGitProc.exe', '/command:showcompare',
+					  '/revision1:' + repo.baseCommit,
+					  '/revision2:' + repo.leftCommit],
+					 cwd=folder,
+					 stdin=None, stdout=None, stderr=None, close_fds=True, creationflags=subprocess.DETACHED_PROCESS)
 
 
 def diff_BaseToRight(folder, repo: dataset.SubjectRepo):
-	subprocess.run([r'C:\Program Files\TortoiseGit\bin\TortoiseGitProc.exe', '/command:showcompare',
-					'/revision1:' + repo.baseCommit,
-					'/revision2:' + repo.rightCommit],
-				   cwd=folder)
+	subprocess.Popen([r'C:\Program Files\TortoiseGit\bin\TortoiseGitProc.exe', '/command:showcompare',
+					  '/revision1:' + repo.baseCommit,
+					  '/revision2:' + repo.rightCommit],
+					 cwd=folder,
+					 stdin=None, stdout=None, stderr=None, close_fds=True, creationflags=subprocess.DETACHED_PROCESS)
 
 
 def runAction(folder, repo: dataset.SubjectRepo):
