@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<button backcol="none" display="label" label_pos="right" textcol="none">
+	<label>Diff: base to right</label>
+	<icon1>#newcommand</icon1>
+	<function type="normal">
+		<instruction>@hideifpath:!D:\ConflictBench\Resource\workspace\*</instruction>
+		<instruction />
+		<instruction>C:\ProgramData\miniconda3\envs\ConflictBench\python.exe D:\ConflictBench\script\folderTool.py --diff-base-to-right {sourcepath$} </instruction>
+	</function>
+</button>

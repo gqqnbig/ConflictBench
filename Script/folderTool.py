@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+import pathlib
+import sys
+import subprocess
+
+import dataset
+import optionUtils
+
+
+def diff_BaseToLeft(folder, repo: dataset.SubjectRepo):
+	subprocess.run([r'C:\Program Files\TortoiseGit\bin\TortoiseGitProc.exe', '/command:showcompare',
+					'/revision1:' + repo.baseCommit,
+					'/revision2:' + repo.leftCommit],
+				   cwd=folder)
+
+
+def diff_BaseToRight(folder, repo: dataset.SubjectRepo):
+	subprocess.run([r'C:\Program Files\TortoiseGit\bin\TortoiseGitProc.exe', '/command:showcompare',
+					'/revision1:' + repo.baseCommit,
+					'/revision2:' + repo.rightCommit],
+				   cwd=folder)
+
+
+def runAction(folder, repo: dataset.SubjectRepo):
+	match sys.argv[-2]:
+		case '--diff-base-to-left':
+			diff_BaseToLeft(folder, repo)
+		case '--diff-base-to-right':
+			diff_BaseToRight(folder, repo)
+		case _:
+			print(f'{sys.argv[-2]} is not --diff-base-to-left or --diff-base-to-right.', file=sys.stderr)
+			input()
+			exit(1)
+
+
+if __name__ == '__main__':
+	folder = sys.argv[-1]
+	repoName = pathlib.Path(folder).name
+
+	opt = optionUtils.Options()
+	opt.LoadDataset()
+
+	for example in opt.dataset:
+		if example.repoName == repoName:
+			runAction(folder, example)
+			exit(0)
+
+	print(f'Repository {repoName} is not found.', file=sys.stderr)
+	input()
+	exit(1)
