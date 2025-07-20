@@ -3,6 +3,8 @@ import pathlib
 import sys
 import subprocess
 
+from git import Repo
+
 import dataset
 import optionUtils
 
@@ -35,7 +37,10 @@ def runAction(folder, repo: dataset.SubjectRepo):
 
 if __name__ == '__main__':
 	folder = sys.argv[-1]
-	repoName = pathlib.Path(folder).name
+
+	repo = Repo(folder, search_parent_directories=True)
+
+	repoName = pathlib.Path(repo.working_dir).name
 
 	opt = optionUtils.Options()
 	opt.LoadDataset()
