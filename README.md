@@ -1,5 +1,14 @@
 # ConflictBench
 
+## Benchmark driver
+
+The benchmark driver consists of a number of files in the Script folder. Python files with the executable bit and shebang are entry point files. Other files are to be imported.
+
+- merge.py: run merge tools.
+- compare.py: compare merge result with developers' solution.
+
+Run these files with `--help` to see exact usage.
+
 ## System Requirements
 
 According to the associated paper (ConflictBench: A benchmark to evaluate software merge tools), this test bench is best run on Ubuntu 22.04 desktop (Debian 12).
@@ -65,8 +74,6 @@ AutoMerge requires JavaFX. Adoptium JDK may not work.[ref](https://github.com/ad
 
 `workspace` is temp folder during experiments.
 `output` contain all experiment results.
-
-`Script` folder contain python script to run this experiment.
 
 NOTICE: 
 1. Before running the script, update the variable `path_prefix` to your local repository path in `script.py`. `resume_experiment` is set to FALSE by default. If it's true, script will always read stored project_record.txt in Data folder.
