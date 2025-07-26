@@ -504,5 +504,5 @@ if __name__ == '__main__':
 	opt.LoadRange()
 
 	for i in opt.evaluationRange:
-		logger.info("Start processing index " + str(i) + "\tproject " + opt.dataset[i].repoName + " commit " + opt.dataset[i].mergeCommit)
+		logger.info(f"Start processing project {i}, {opt.dataset[i].repoName}. Conflicting file is {pathlib.Path(opt.dataset[i].conflictingFile).name}.")
 		processExample(opt.dataset[i])
