@@ -92,11 +92,11 @@ if __name__ == '__main__':
 {0}
 
 --help	show this help.
---log-file	specify the path of a log file. If this option is missing, log is not written to disk.
---path-prefix	the directory of ConflictBench. If this option is missing, the path is the parent of parent folder of {0}, which is {1}.
---total_list	the path to the file containing all examples. If this option is missing, the path is derived from --path-prefix.
---range	n1..n2	run experiments against examples from n1, inclusive to n2, exclusive. n1 starts at 0. If this option is missing, run all examples.	
-'''.format(sys.argv[0], pathlib.Path(__file__).parent.parent.resolve()))
+--log-file file	
+specify the path of a log file. If this option is missing, log is not written to disk.
+
+
+'''.format(sys.argv[0]) + optionUtils.getHelp())
 		exit(0)
 
 	formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')

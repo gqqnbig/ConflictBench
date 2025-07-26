@@ -70,3 +70,17 @@ class Options:
 			evaluateTo = len(self.dataset)
 
 		self.evaluationRange = range(evaluateFrom, evaluateTo)
+
+
+def getHelp():
+	return \
+'''
+--path-prefix folder
+the directory of ConflictBench. If this option is missing, the path is {0}.
+
+--total_list file
+the path to the file containing all examples. If this option is missing, the path is derived from --path-prefix.
+
+--range	n1..n2
+run experiments against examples from n1, inclusive to n2, exclusive. n1 starts at 0. If this option is missing, run all examples.	
+'''.format(pathlib.Path(__file__).parent.parent.resolve())
