@@ -1,18 +1,22 @@
+#!/usr/bin/env python3
+
 # Script to run experiments
 import glob
 import os
+import stat
 import sys
 import logging
 import shutil
-import subprocess
-from pathlib import Path
+import pathlib
 from logging import StreamHandler
+import subprocess
 
 from git import Repo
 
 import dataset
 import optionUtils
 import ProcessUtils
+from ProcessUtils import ProcessException
 
 # Set path
 workspace = 'Resource/workspace'
@@ -31,174 +35,157 @@ MAX_WAITINGTIME_CLONE = 10 * 60
 MAX_WAITINGTIME_MERGE_BASE = 1 * 60
 MAX_WAITINGTIME_RESET = 5 * 60
 # maximum waiting time to resolve a merge conflict.
-MAX_WAITINGTIME_RESOLVE = 1 * 60
-MAX_WAITINGTIME_DIFF = 5*60
-MAX_WAITINGTIME_LOG = 5*60
-MAX_WAITINGTIME_COMPILE = 5*60
-MAX_WAITINGTIME_TEST = 10*60
+MAX_WAITINGTIME_RESOLVE = 3 * 60
+MAX_WAITINGTIME_DIFF = 5 * 60
+MAX_WAITINGTIME_LOG = 5 * 60
+MAX_WAITINGTIME_COMPILE = 5 * 60
+MAX_WAITINGTIME_TEST = 10 * 60
 Rename_Threshold = "90%"
+
 
 # Define Exception
 class AbnormalBehaviourError(Exception):
-    # Any user-defined abnormal behaviour need to terminate the script can be found here
-    def __init__(self, message):
-        self.message = message
+	# Any user-defined abnormal behaviour need to terminate the script can be found here
+	def __init__(self, message):
+		self.message = message
+
 
 def merge_with_JDime(input_path, output_path, mode, logger):
-    try:
-        if mode == 0:
-            # linebased+structured
-            mode_cmd = "linebased,structured"
-        elif mode == 1:
-            # structured:
-            mode_cmd = "structured"
-        else:
-            raise AbnormalBehaviourError("Undefined mode in JDime")
-        proc = subprocess.Popen(os.path.join(path_prefix, JDime_executable_path) +
-                                " " + "-f --mode " + mode_cmd +
-                                " --output " + output_path + " " +
-                                os.path.join(input_path, "left") + " " +
-                                os.path.join(input_path, "base") + " " +
-                                os.path.join(input_path, "right"),
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+	proc = None
+	try:
+		if mode == 0:
+			# linebased+structured
+			mode_cmd = "linebased,structured"
+		elif mode == 1:
+			# structured:
+			mode_cmd = "structured"
+		else:
+			raise AbnormalBehaviourError("Undefined mode in JDime")
+		proc = subprocess.Popen(os.path.join(path_prefix, JDime_executable_path) +
+								" " + "-f --mode " + mode_cmd +
+								" --output " + output_path + " " +
+								os.path.join(input_path, "left") + " " +
+								os.path.join(input_path, "base") + " " +
+								os.path.join(input_path, "right"),
+								stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
-        if proc.returncode == 0:
-            # Update logger
-            logger.info("Finish JDime")
-        else:
-            # Failed to run JDime
-            logger.info("Fail to run JDime")
-            raise AbnormalBehaviourError("Fail to run JDime")
-    except subprocess.TimeoutExpired:
-        # Terminate the unfinished process
-        proc.terminate()
-        # Timeout occur
-        # Update logger
-        logger.error("Fail to run JDime in time")
-        raise AbnormalBehaviourError("Fail to run JDime in time")
-    finally:
-        pass
+		if proc.returncode == 0:
+			# Update logger
+			logger.info("Finish JDime")
+		else:
+			# Failed to run JDime
+			logger.info("Fail to run JDime")
+			raise AbnormalBehaviourError("Fail to run JDime")
+	except subprocess.TimeoutExpired:
+		# Terminate the unfinished process
+		if proc is not None:
+			proc.terminate()
+		# Timeout occur
+		# Update logger
+		logger.error("Fail to run JDime in time")
+		raise AbnormalBehaviourError("Fail to run JDime in time")
+	finally:
+		pass
 
 
 def merge_with_FSTMerge(input_path, output_path, logger):
-    # Create merge.config at first
-    f = open(os.path.join(input_path, "merge.config"), "w")
-    f.write("left\nbase\nright");
-    f.close()
-    # Run FSTMerge
-    runProcess("java -cp " +
-               os.path.join(path_prefix, FSTMerge_executable_path) +
-               " " + "merger.FSTGenMerger --expression " +
-               os.path.join(input_path, "merge.config") + " > " +
-               os.path.join(output_path, "result.txt"))
-    logger.info("Finish FSTMerge")
-    # Move the generated folder into output path
-    if os.path.exists(os.path.join(input_path, "merge")) and \
-            not os.path.isfile(os.path.join(input_path, "merge")):
-        shutil.move(os.path.join(input_path, "merge"),
-                    os.path.join(output_path))
-    else:
-        raise AbnormalBehaviourError("FSTMerge generated folder doesn't exist")
+	# Create merge.config at first
+	f = open(os.path.join(input_path, "merge.config"), "w")
+	f.write("left\nbase\nright")
+	f.close()
+	# Run FSTMerge
+	ProcessUtils.runProcess("java -cp " +
+							os.path.join(path_prefix, FSTMerge_executable_path) +
+							" " + "merger.FSTGenMerger --expression " +
+							os.path.join(input_path, "merge.config") + " > " +
+							os.path.join(output_path, "result.txt"), MAX_WAITINGTIME_RESOLVE)
+	logger.info("Finish FSTMerge")
+	# Move the generated folder into output path
+	if os.path.exists(os.path.join(input_path, "merge")) and not os.path.isfile(os.path.join(input_path, "merge")):
+		shutil.move(os.path.join(input_path, "merge"), output_path)
+	else:
+		raise AbnormalBehaviourError("FSTMerge generated folder doesn't exist")
 
 
 def merge_with_IntelliMerge(input_path, output_path, logger):
-    try:
-        # Run IntelliMerge
-        proc = subprocess.Popen("java -jar " +
-                                os.path.join(path_prefix, IntelliMerge_executable_path) +
-                                " " + "-d " +
-                                os.path.join(input_path, "left") + " " +
-                                os.path.join(input_path, "base") + " " +
-                                os.path.join(input_path, "right") + " " +
-                                "-o " + output_path,
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+	proc = None
+	try:
+		# Run IntelliMerge
+		proc = subprocess.Popen("java -jar " +
+								os.path.join(path_prefix, IntelliMerge_executable_path) +
+								" " + "-d " +
+								os.path.join(input_path, "left") + " " +
+								os.path.join(input_path, "base") + " " +
+								os.path.join(input_path, "right") + " " +
+								"-o " + output_path,
+								stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
-        if proc.returncode == 0:
-            # Update logger
-            logger.info("Finish IntelliMerge")
-        else:
-            # Failed to run JDime
-            logger.info("Fail to run IntelliMerge")
-            raise AbnormalBehaviourError("Fail to run IntelliMerge")
-    except subprocess.TimeoutExpired:
-        # Terminate the unfinished process
-        proc.terminate()
-        # Timeout occur
-        # Update logger
-        logger.error("Fail to run IntelliMerge in time")
-        raise AbnormalBehaviourError("Fail to run IntelliMerge in time")
-    finally:
-        pass
+		if proc.returncode == 0:
+			# Update logger
+			logger.info("Finish IntelliMerge")
+		else:
+			# Failed to run JDime
+			logger.info("Fail to run IntelliMerge")
+			raise AbnormalBehaviourError("Fail to run IntelliMerge")
+	except subprocess.TimeoutExpired:
+		# Terminate the unfinished process
+		if proc is not None:
+			proc.terminate()
+		# Timeout occur
+		# Update logger
+		logger.error("Fail to run IntelliMerge in time")
+		raise AbnormalBehaviourError("Fail to run IntelliMerge in time")
+	finally:
+		pass
 
 
 def merge_with_AutoMerge(input_path, output_path):
-    runProcess("java -jar " +
-               os.path.join(path_prefix, AutoMerge_executable_path) +
-               " " + "-o " + output_path + " -m structured -log info -f -S " +
-               os.path.join(input_path, "left") + " " +
-               os.path.join(input_path, "base") + " " +
-               os.path.join(input_path, "right"))
+	ProcessUtils.runProcess("java -jar " +
+							os.path.join(path_prefix, AutoMerge_executable_path) +
+							" " + "-o " + output_path + " -m structured -log info -f -S " +
+							os.path.join(input_path, "left") + " " +
+							os.path.join(input_path, "base") + " " +
+							os.path.join(input_path, "right"), MAX_WAITINGTIME_RESOLVE)
 
 
-def merge_with_summer(repo, leftSha, rightSha, baseSha, output_path):
-	cmd = f'{summerPath} merge -C {repo} -l {leftSha} -r {rightSha} -b {baseSha} --worktree {output_path}'
-	runProcess(cmd)
+def merge_with_summer(repo, leftSha, rightSha, baseSha, output_path, targetFile1, targetFile2=None):
+	cmd = f'{summerPath} merge -C {repo} -l {leftSha} -r {rightSha} -b {baseSha} --worktree {output_path} --keep -- {targetFile1}'
+	if targetFile2 is not None and targetFile2 != targetFile1:
+		cmd += ' ' + targetFile2
+	try:
+		logger.debug(f'cmd: {cmd}')
+		stdout = ProcessUtils.runProcess(cmd, MAX_WAITINGTIME_RESOLVE)
+		logger.debug(stdout)
+	except ProcessException as e:
+		logger.error(e.message)
 
 
 # merge two commits
 def git_merge(right_parent, logger):
-    # Use git to merge left and right
-    # Assuming repository is currently at left version
-    try:
-        proc = subprocess.Popen("git merge -s recursive -X find-renames=" + Rename_Threshold + ' ' + right_parent,
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_MERGE)
-        if proc.returncode == 0:
-            # Successful merged by git merge
-            return True
-        else:
-            # Git merge failed
-            return False
-    except subprocess.TimeoutExpired:
-        # Terminate the unfinished process
-        proc.terminate()
-        # Failed to get result of git merge in time
-        logger.error("Fail to run git merge in time")
-        raise AbnormalBehaviourError("Fail to run git merge in time")
-    finally:
-        pass
+	# Use git to merge left and right
+	# Assuming repository is currently at left version
+	proc = None
+	try:
+		proc = subprocess.Popen("git merge -s recursive -X find-renames=" + Rename_Threshold + ' ' + right_parent,
+								stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_MERGE)
+		if proc.returncode == 0:
+			# Successful merged by git merge
+			return True
+		else:
+			# Git merge failed
+			return False
+	except subprocess.TimeoutExpired:
+		# Terminate the unfinished process
+		if proc is not None:
+			proc.terminate()
+		# Failed to get result of git merge in time
+		logger.error("Fail to run git merge in time")
+		raise AbnormalBehaviourError("Fail to run git merge in time")
+	finally:
+		pass
 
-# clean a folder content
-def clean_folder(path, clean_logger):
-    if os.path.exists(path):
-        # destination exist
-        if os.path.isdir(path):
-            # destination is a directory
-            try:
-                for filename in os.listdir(path):
-                    file_path = os.path.join(path, filename)
-                    if os.path.isfile(file_path) or os.path.islink(file_path):
-                        os.remove(file_path)
-                    elif os.path.isdir(file_path):
-                        shutil.rmtree(file_path)
-                        # os.system("rm -rf " + file_path)
-            except shutil.Error:
-                clean_logger.error("remove folder error occurred")
-                raise AbnormalBehaviourError("Certain error occur")
-                exit(1)
-            # Debugging code: Be cautious
-            # except Exception as e:
-            #     clean_logger.error("Unknown error")
-            #     print(str(e))
-            #     raise AbnormalBehaviourError("Certain error occur")
-            #     exit(1)
-        else:
-            raise AbnormalBehaviourError("Path is a file instead of a folder")
-    else:
-        # Empty path, skip
-        pass
-		
-		
+
 def prepare_repo(local_path, project_url, sha):
 	if os.path.isdir(local_path) and os.path.isdir(os.path.join(local_path, '.git')):
 		repo = Repo(local_path)
@@ -443,7 +430,6 @@ def processExample(subjectRepo: dataset.SubjectRepo):
 # create logger to record complete info
 # create logger with 'script_logger'
 logger = logging.getLogger('textual_conflict_logger')
-logger.setLevel(logging.INFO)
 
 if __name__ == '__main__':
 	if '--help' in sys.argv:
@@ -452,6 +438,7 @@ if __name__ == '__main__':
 
 --help	show this help.
 --log-file	specify the path of a log file. If this option is missing, log is not written to disk.
+--log-level	info or debug. Default is info.
 --path-prefix	the directory of ConflictBench. If this option is missing, the path is the parent of parent folder of {0}, which is {1}.
 --total_list	the path to the file containing all examples. If this option is missing, the path is derived from --path-prefix.
 --range	n1..n2	run experiments against examples from n1, inclusive to n2, exclusive. n1 starts at 0. If this option is missing, run all examples.
@@ -460,6 +447,20 @@ if __name__ == '__main__':
 --summer	run the summer tool. The summer executable is expected to be found in the PATH environment variable.		
 '''.format(sys.argv[0], pathlib.Path(__file__).parent.parent.resolve()))
 		exit(0)
+
+	try:
+		i = sys.argv.index('--log-level')
+		logLevel = sys.argv[i + 1]
+		match logLevel.lower():
+			case 'info':
+				logger.setLevel(logging.INFO)
+			case 'debug':
+				logger.setLevel(logging.DEBUG)
+			case _:
+				print(f'Log level must be info or debug. What you passed is {logLevel}', file=sys.stderr)
+				exit(1)
+	except:
+		logger.setLevel(logging.INFO)
 
 	try:
 		i = sys.argv.index('--path-prefix')
