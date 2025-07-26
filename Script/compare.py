@@ -1,10 +1,12 @@
+#!/usr/bin/env python3
+
+import csv
 import logging
 import os
-import pathlib
 import subprocess
 import sys
+from typing import List
 
-from git import Repo
 
 import dataset
 import optionUtils
@@ -47,18 +49,32 @@ def normalizeFile(filePath, normalizedFile):
 		f.writelines(normalized_content)
 
 
-def ProcessExample(baseFolderActual, baseFolderExpected, subjectRepo: dataset.SubjectRepo):
+def processExample(baseFolderActual, baseFolderExpected, subjectRepo: dataset.SubjectRepo) -> List:
+	'''
+
+	:param baseFolderActual:
+	:param baseFolderExpected:
+	:param subjectRepo:
+	:return:  csvFields ('repo', 'conflicting file', 'diff size')
+	'''
+	csvFields = [subjectRepo.repoName, subjectRepo.conflictingFile, '-']
+
 	folderExpected = os.path.join(baseFolderExpected, subjectRepo.repoName)
 	mergedFile = subjectRepo.getMergedFile(baseFolderExpected)
 	fileExpected = os.path.join(folderExpected, mergedFile)
-	if os.path.exists(fileExpected) is False:
-		raise Exception("File " + fileExpected + " doesn't exist")
-
 	folderActual = os.path.join(baseFolderActual, subjectRepo.repoName)
 	fileActual = os.path.join(folderActual, mergedFile)
+	if os.path.exists(fileExpected) is False:
+		logger.warning("File " + fileExpected + " doesn't exist. The file may be deleted in the merge commit.")
+		if os.path.exists(fileActual) is False:
+			logger.info('Fully matched')
+		else:
+			logger.info(f'Merged file exists at {fileActual}.')
+		return csvFields
+
 	if os.path.exists(fileActual) is False:
 		logger.info("File name error: File " + fileActual + " doesn't exist")
-		return
+		return csvFields
 
 	if fileActual.endswith('.java'):
 		p = fileActual.rfind('.')
@@ -78,12 +94,15 @@ def ProcessExample(baseFolderActual, baseFolderExpected, subjectRepo: dataset.Su
 	try:
 		proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
 		stdout, stderr = proc.communicate()
+		csvFields[2] = len(stdout)
 		if len(stdout) > 0:
-			logger.info(f'Merged file does not fully matched actual file. Diff size is {len(stdout)}. Command is {cmd}')
+			logger.info(f'Merged file does not fully match actual file. Diff size is {len(stdout)}. Command is {cmd}')
 		else:
 			logger.info('Fully matched')
 	except:
 		logger.error(f'Failed to run {cmd}')
+
+	return csvFields
 
 
 if __name__ == '__main__':
@@ -95,6 +114,8 @@ if __name__ == '__main__':
 --log-file file	
 specify the path of a log file. If this option is missing, log is not written to disk.
 
+--csv file
+Write a CSV report.
 
 '''.format(sys.argv[0]) + optionUtils.getHelp())
 		exit(0)
@@ -120,9 +141,26 @@ specify the path of a log file. If this option is missing, log is not written to
 	opt.LoadDataset()
 	opt.LoadRange()
 
+	try:
+		i = sys.argv.index('--csv')
+		arg = sys.argv[i + 1]
+		# the csv module does its own newline handling.
+		csvfile = open(arg, 'w', newline='')
+		csvWriter = csv.writer(csvfile)
+
+		csvWriter.writerow(['repo', 'conflicting file', 'diff size'])
+	except:
+		csvfile = None
+		csvWriter = None
+
 	baseFolderExpected = os.path.join(opt.path_prefix, 'Resource/workspace')
 	baseFolderActual = os.path.join(opt.path_prefix, 'Resource/workspace/result/summer')
 
 	for i in opt.evaluationRange:
 		logger.info(f"Start verifying project {i} {opt.dataset[i].repoName}")
-		ProcessExample(baseFolderActual, baseFolderExpected, opt.dataset[i])
+		csvFields = processExample(baseFolderActual, baseFolderExpected, opt.dataset[i])
+		if csvWriter is not None:
+			csvWriter.writerow(csvFields)
+
+	if csvfile is not None:
+		csvfile.close()
