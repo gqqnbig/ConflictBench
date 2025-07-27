@@ -22,7 +22,6 @@ from ProcessUtils import ProcessException
 workspace = 'Resource/workspace'
 logger_path = 'Logger'
 output_path = 'Resource/output'
-FSTMerge_executable_path = 'MergeTools/FSTMerge/featurehouse_20220107.jar'
 JDime_executable_path = 'MergeTools/JDime/bin/JDime'
 IntelliMerge_executable_path = 'MergeTools/IntelliMerge/IntelliMerge-1.0.9-all.jar'
 AutoMerge_executable_path = 'MergeTools/AutoMerge/AutoMerge.jar'
