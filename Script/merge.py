@@ -202,7 +202,7 @@ def createSparseWorktree(mainWorktree, newWorktree, sha, file_path):
 
 	subprocess.run(['git', 'worktree', 'add', '-f', '--no-checkout',
 					newWorktree, sha],
-				   cwd=mainWorktree)
+				   cwd=mainWorktree, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
 	# In the cone mode, the path must be a folder, not file name.
 	# git may throw
@@ -213,9 +213,9 @@ def createSparseWorktree(mainWorktree, newWorktree, sha, file_path):
 	# $ git sparse-checkout list
 	# C:/Program Files/Git/spring-boot-project/spring-boot-dependencies/pom.xml
 	subprocess.run(['git', 'sparse-checkout', 'set', '--no-cone', file_path],
-				   cwd=newWorktree)
+				   cwd=newWorktree, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
-	subprocess.run(['git', 'checkout', '-f'], cwd=newWorktree)
+	subprocess.run(['git', 'checkout', '-f'], cwd=newWorktree, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
 
 def prepare_repo(local_path, project_url, sha):
