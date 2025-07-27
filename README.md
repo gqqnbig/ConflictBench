@@ -9,6 +9,17 @@ The benchmark driver consists of a number of files in the Script folder. Python 
 
 Run these files with `--help` to see exact usage.
 
+### Python Environment
+
+Refer to requirements.txt for details.
+
+You may use a conda environment.
+
+```sh
+conda install conda-forge::mamba 
+mamba install -c conda-forge python=3.10 gitdb=4.0 GitPython=3.1 typing-extensions=4.1
+```
+
 ## System Requirements
 
 According to the associated paper (ConflictBench: A benchmark to evaluate software merge tools), this test bench is best run on Ubuntu 22.04 desktop (Debian 12).
