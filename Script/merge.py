@@ -341,11 +341,7 @@ def processExample(subjectRepo: dataset.SubjectRepo):
 		logger.error("Wrong conflicting file path in right version, refer to a folder")
 		raise Exception("Wrong conflicting file path in right version, refer to a folder")
 	# Create result folder
-	if os.path.exists(resultFolder):
-		# Indicate previous clean up work is not completed
-		logger.error("Found existing result folder. Clean up work not finished")
-		shutil.rmtree(resultFolder, onexc=on_rm_error)
-	pathlib.Path(resultFolder).mkdir()
+	pathlib.Path(os.path.join(path_prefix, workspace, 'result')).mkdir(exist_ok=True)
 
 	# Move the child version into result folder
 	shutil.move(os.path.join(path_prefix, workspace, 'child'),
