@@ -343,6 +343,8 @@ def processExample(subjectRepo: dataset.SubjectRepo):
 	# Create result folder
 	pathlib.Path(os.path.join(path_prefix, workspace, 'result')).mkdir(exist_ok=True)
 
+	pathlib.Path(os.path.join(path_prefix, workspace, 'result', 'FSTMerge')).mkdir(exist_ok=True)
+
 	# Move the child version into result folder
 	shutil.move(os.path.join(path_prefix, workspace, 'child'),
 				resultFolder)
