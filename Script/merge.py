@@ -186,6 +186,28 @@ def git_merge(right_parent, logger):
 		pass
 
 
+def createSparseWorktree(mainWorktree, newWorktree, sha, file_path):
+	assert os.path.isabs(mainWorktree)
+	assert os.path.isabs(newWorktree)
+
+	subprocess.run(['git', 'worktree', 'add', '-f', '--no-checkout',
+					newWorktree, sha],
+				   cwd=mainWorktree)
+
+	# In the cone mode, the path must be a folder, not file name.
+	# git may throw
+	# fatal: 'spring-boot-project/spring-boot-dependencies/pom.xml' is not a directory; to treat it as a directory anyway, rerun with --skip-checks
+
+	# In the no-cone mode, prepending a slash to file_path is recommended by the git binary,
+	# but on Windows it may present a bug that the path incorrectly joins with the directory of the git binary.
+	# $ git sparse-checkout list
+	# C:/Program Files/Git/spring-boot-project/spring-boot-dependencies/pom.xml
+	subprocess.run(['git', 'sparse-checkout', 'set', '--no-cone', file_path],
+				   cwd=newWorktree)
+
+	subprocess.run(['git', 'checkout', '-f'], cwd=newWorktree)
+
+
 def prepare_repo(local_path, project_url, sha):
 	if os.path.isdir(local_path) and os.path.isdir(os.path.join(local_path, '.git')):
 		repo = Repo(local_path)
