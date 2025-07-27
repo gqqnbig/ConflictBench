@@ -254,7 +254,7 @@ def createBranchVersion(project_name, folderName):
 		exit(1)
 
 
-def processExample(subjectRepo: dataset.SubjectRepo):
+def processExample(merger: Merger, mergerPath, subjectRepo: dataset.SubjectRepo):
 	# Read merge scenario information
 	# project_url = example['repo_url']
 	# project_name = example['project_name']
@@ -271,35 +271,46 @@ def processExample(subjectRepo: dataset.SubjectRepo):
 
 	resultFolder = os.path.join(path_prefix, workspace, 'result')
 	pathlib.Path(resultFolder).mkdir(exist_ok=True)
-	if runSummer:
-		pathlib.Path(os.path.join(resultFolder, 'summer')).mkdir(exist_ok=True)
-		# commit['summer_mergeable'] = True
-		try:
-			merge_with_summer(repoPath,
-							  subjectRepo.leftCommit, subjectRepo.rightCommit, subjectRepo.baseCommit,
-							  os.path.join(resultFolder, 'summer', subjectRepo.repoName), subjectRepo.conflictingFile, subjectRepo.getMergedFile(os.path.join(path_prefix, workspace)))
-			# commit['summer_solution_generation'] = True
-			logger.info("summer solution generated")
-		except Exception as e:
-			# commit['summer_solution_generation'] = False
-			pass
 
-	base_folder = os.path.join(path_prefix, workspace, subjectRepo.repoName + '-base')
+	match merger:
+		case Merger.Summer:
+			pathlib.Path(os.path.join(resultFolder, 'summer')).mkdir(exist_ok=True)
+			# commit['summer_mergeable'] = True
+			try:
+				merge_with_summer(mergerPath, repoPath,
+								  subjectRepo.leftCommit, subjectRepo.rightCommit, subjectRepo.baseCommit,
+								  os.path.join(resultFolder, 'summer', subjectRepo.repoName), subjectRepo.conflictingFile, subjectRepo.getMergedFile(os.path.join(path_prefix, workspace)))
+				# commit['summer_solution_generation'] = True
+				logger.info("summer solution generated")
+			except Exception as e:
+				# commit['summer_solution_generation'] = False
+				pass
+		case Merger.FstMerge:
+			pathlib.Path(os.path.join(resultFolder, 'FSTMerge')).mkdir(exist_ok=True)
 
-	createSparseWorktree(repoPath, base_folder, subjectRepo.baseCommit, subjectRepo.conflictingFile)
-	logger.info("Prepared base version")
+			base_folder = os.path.join(path_prefix, workspace, subjectRepo.repoName + '-base')
+			createSparseWorktree(repoPath, base_folder, subjectRepo.baseCommit, subjectRepo.conflictingFile)
+			logger.debug("Prepared base version")
 
-	left_Folder = os.path.join(path_prefix, workspace, subjectRepo.repoName + '-left')
-	createSparseWorktree(repoPath, left_Folder, subjectRepo.leftCommit, subjectRepo.conflictingFile)
-	logger.info("Prepared left version")
+			left_Folder = os.path.join(path_prefix, workspace, subjectRepo.repoName + '-left')
+			createSparseWorktree(repoPath, left_Folder, subjectRepo.leftCommit, subjectRepo.conflictingFile)
+			logger.debug("Prepared left version")
 
-	right_folder = os.path.join(path_prefix, workspace, subjectRepo.repoName + '-right')
-	createSparseWorktree(repoPath, right_folder, subjectRepo.rightCommit, subjectRepo.conflictingFile)
-	logger.info("Prepared right version")
+			right_folder = os.path.join(path_prefix, workspace, subjectRepo.repoName + '-right')
+			createSparseWorktree(repoPath, right_folder, subjectRepo.rightCommit, subjectRepo.conflictingFile)
+			logger.debug("Prepared right version")
 
-	child_folder = os.path.join(path_prefix, workspace, subjectRepo.repoName + '-child')
-	createSparseWorktree(repoPath, child_folder, subjectRepo.mergeCommit, subjectRepo.conflictingFile)
-	logger.info("Prepared child version")
+			child_folder = os.path.join(path_prefix, workspace, subjectRepo.repoName + '-child')
+			createSparseWorktree(repoPath, child_folder, subjectRepo.mergeCommit, subjectRepo.conflictingFile)
+			logger.debug("Prepared child version")
+
+			try:
+				merge_with_FSTMerge(mergerPath, repoPath, os.path.join(resultFolder, 'FSTMerge'), logger)
+				logger.info("FSTMerge solution generated")
+			except Exception as e:
+				logger.error(e)
+
+	return
 
 	# Run git-merge to get the git-merge version
 	# Make a copy and change to left version
@@ -360,17 +371,6 @@ def processExample(subjectRepo: dataset.SubjectRepo):
 	# Move the git-merge version into result folder
 	shutil.move(os.path.join(path_prefix, workspace, 'git-merge'),
 				resultFolder)
-
-	if '--fst-merge' in sys.argv:
-		pathlib.Path(os.path.join(resultFolder, 'FSTMerge')).mkdir()
-		commit['FSTMerge_mergeable'] = True
-		try:
-			merge_with_FSTMerge(os.path.join(path_prefix, workspace),
-								os.path.join(resultFolder, 'FSTMerge'), logger)
-			commit['FSTMerge_solution_generation'] = True
-			logger.info("FSTMerge solution generated")
-		except AbnormalBehaviourError as e:
-			commit['FSTMerge_solution_generation'] = False
 
 	# If empty_file is True or file is not java file
 	# skip JDime, IntelliMerge, AutoMerge, only keep FSTMerge
@@ -520,4 +520,4 @@ run the merge at the given path.
 
 	for i in opt.evaluationRange:
 		logger.info(f"Start processing project {i}, {opt.dataset[i].repoName}. Conflicting file is {pathlib.Path(opt.dataset[i].conflictingFile).name}.")
-		processExample(opt.dataset[i])
+		processExample(merger, mergerPath, opt.dataset[i])
