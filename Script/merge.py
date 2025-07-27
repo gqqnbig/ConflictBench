@@ -108,12 +108,10 @@ def merge_with_FSTMerge(toolPath, repoDir, output_path, logger):
 	cmd = f'java -cp {toolPath} merger.FSTGenMerger' + \
 		  f' --expression {configPath} --output-directory {output_path} --base-directory {pathlib.Path(repoDir).parent}'
 
-	try:
-		logger.debug(f'cmd: {cmd}')
-		stdout = ProcessUtils.runProcess(cmd, MAX_WAITINGTIME_RESOLVE)
-		logger.debug(stdout)
-	except ProcessException as e:
-		logger.error(e.message)
+	logger.debug(f'cmd: {cmd}')
+	stdout = ProcessUtils.runProcess(cmd, MAX_WAITINGTIME_RESOLVE)
+	if logger.isEnabledFor(logging.DEBUG):
+		logger.debug(stdout.decode('utf-8', errors='ignore'))
 
 
 
@@ -165,7 +163,8 @@ def merge_with_summer(repo, leftSha, rightSha, baseSha, output_path, targetFile1
 	try:
 		logger.debug(f'cmd: {cmd}')
 		stdout = ProcessUtils.runProcess(cmd, MAX_WAITINGTIME_RESOLVE)
-		logger.debug(stdout)
+		if logger.isEnabledFor(logging.DEBUG):
+			logger.debug(stdout.decode('utf-8', errors='ignore'))
 	except ProcessException as e:
 		logger.error(e.message)
 
