@@ -88,23 +88,24 @@ def merge_with_JDime(input_path, output_path, mode, logger):
 		pass
 
 
-def merge_with_FSTMerge(input_path, output_path, logger):
+def merge_with_FSTMerge(toolPath, repoDir, output_path, logger):
 	# Create merge.config at first
-	f = open(os.path.join(input_path, "merge.config"), "w")
-	f.write("left\nbase\nright")
-	f.close()
-	# Run FSTMerge
-	ProcessUtils.runProcess("java -cp " +
-							os.path.join(path_prefix, FSTMerge_executable_path) +
-							" " + "merger.FSTGenMerger --expression " +
-							os.path.join(input_path, "merge.config") + " > " +
-							os.path.join(output_path, "result.txt"), MAX_WAITINGTIME_RESOLVE)
-	logger.info("Finish FSTMerge")
-	# Move the generated folder into output path
-	if os.path.exists(os.path.join(input_path, "merge")) and not os.path.isfile(os.path.join(input_path, "merge")):
-		shutil.move(os.path.join(input_path, "merge"), output_path)
-	else:
-		raise AbnormalBehaviourError("FSTMerge generated folder doesn't exist")
+	repoName = pathlib.Path(repoDir).name
+	configPath = os.path.normpath(os.path.join(output_path, repoName + ".config"))
+	if not os.path.exists(configPath):
+		with open(configPath, "w") as f:
+			f.write(f"{repoName}-left\n{repoName}-base\n{repoName}-right")
+
+	cmd = f'java -cp {toolPath} merger.FSTGenMerger' + \
+		  f' --expression {configPath} --output-directory {output_path} --base-directory {pathlib.Path(repoDir).parent}'
+
+	try:
+		logger.debug(f'cmd: {cmd}')
+		stdout = ProcessUtils.runProcess(cmd, MAX_WAITINGTIME_RESOLVE)
+		logger.debug(stdout)
+	except ProcessException as e:
+		logger.error(e.message)
+
 
 
 def merge_with_IntelliMerge(input_path, output_path, logger):
