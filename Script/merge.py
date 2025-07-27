@@ -257,7 +257,8 @@ def processExample(subjectRepo: dataset.SubjectRepo):
 	# file_path = example['conflicting_file']
 
 	os.chdir(os.path.join(path_prefix, workspace))
-	prepare_repo(os.path.join(path_prefix, workspace, subjectRepo.repoName), subjectRepo.repoUrl, subjectRepo.mergeCommit)
+	repoPath = os.path.join(path_prefix, workspace, subjectRepo.repoName)
+	prepare_repo(repoPath, subjectRepo.repoUrl, subjectRepo.mergeCommit)
 
 	resultFolder = os.path.join(path_prefix, workspace, 'result')
 	pathlib.Path(resultFolder).mkdir(exist_ok=True)
@@ -265,7 +266,7 @@ def processExample(subjectRepo: dataset.SubjectRepo):
 		pathlib.Path(os.path.join(resultFolder, 'summer')).mkdir(exist_ok=True)
 		# commit['summer_mergeable'] = True
 		try:
-			merge_with_summer(os.path.join(path_prefix, workspace, subjectRepo.repoName),
+			merge_with_summer(repoPath,
 							  subjectRepo.leftCommit, subjectRepo.rightCommit, subjectRepo.baseCommit,
 							  os.path.join(resultFolder, 'summer', subjectRepo.repoName), subjectRepo.conflictingFile, subjectRepo.getMergedFile(os.path.join(path_prefix, workspace)))
 			# commit['summer_solution_generation'] = True
@@ -274,59 +275,23 @@ def processExample(subjectRepo: dataset.SubjectRepo):
 			# commit['summer_solution_generation'] = False
 			pass
 
-	return
+	base_folder = os.path.join(path_prefix, workspace, subjectRepo.repoName + '-base')
 
-	createBranchVersion(project_name, 'base')
-	os.chdir(os.path.join(path_prefix, workspace, 'base'))
-	Repo(os.getcwd()).git.reset('--hard', commit['base'])
-	# git_reset_commit(commit['base'], logger)
-	# Except the conflicting file, remove all other files in base version
-	os.chdir(os.path.join(path_prefix, workspace, 'base'))
-	for filename in glob.glob("**", recursive=True):
-		if filename == file_path:
-			logger.info("Found same name file in base version")
-		if os.path.isfile(filename) and filename != file_path:
-			os.remove(filename)
-	logger.info("Complete deletion in base version")
+	createSparseWorktree(repoPath, base_folder, subjectRepo.baseCommit, subjectRepo.conflictingFile)
+	logger.info("Prepared base version")
 
-	createBranchVersion(project_name, 'left')
-	os.chdir(os.path.join(path_prefix, workspace, 'left'))
-	Repo(os.getcwd()).git.reset('--hard', commit['left'])
-	# git_reset_commit(commit['left'], logger)
-	# Except the conflicting file, remove all other files in left version
-	os.chdir(os.path.join(path_prefix, workspace, 'left'))
-	for filename in glob.glob("**", recursive=True):
-		if filename == file_path:
-			logger.info("Found same name file in left version")
-		if os.path.isfile(filename) and filename != file_path:
-			os.remove(filename)
-	logger.info("Complete deletion in left version")
+	left_Folder = os.path.join(path_prefix, workspace, subjectRepo.repoName + '-left')
+	createSparseWorktree(repoPath, left_Folder, subjectRepo.leftCommit, subjectRepo.conflictingFile)
+	logger.info("Prepared left version")
 
-	createBranchVersion(project_name, 'right')
-	os.chdir(os.path.join(path_prefix, workspace, 'right'))
-	Repo(os.getcwd()).git.reset('--hard', commit['right'])
-	# git_reset_commit(commit['right'], logger)
-	# Except the conflicting file, remove all other files in right version
-	os.chdir(os.path.join(path_prefix, workspace, 'right'))
-	for filename in glob.glob("**", recursive=True):
-		if filename == file_path:
-			logger.info("Found same name file in right version")
-		if os.path.isfile(filename) and filename != file_path:
-			os.remove(filename)
-	logger.info("Complete deletion in right version")
+	right_folder = os.path.join(path_prefix, workspace, subjectRepo.repoName + '-right')
+	createSparseWorktree(repoPath, right_folder, subjectRepo.rightCommit, subjectRepo.conflictingFile)
+	logger.info("Prepared right version")
 
-	createBranchVersion(project_name, 'child')
-	os.chdir(os.path.join(path_prefix, workspace, 'child'))
-	Repo(os.getcwd()).git.reset('--hard', commit['child'])
-	# git_reset_commit(commit['child'], logger)
-	# Except the conflicting file, remove all other files in child version
-	os.chdir(os.path.join(path_prefix, workspace, 'child'))
-	for filename in glob.glob("**", recursive=True):
-		if filename == file_path:
-			logger.info("Found same name file in child version")
-		if os.path.isfile(filename) and filename != file_path:
-			os.remove(filename)
-	logger.info("Complete deletion in child version")
+	child_folder = os.path.join(path_prefix, workspace, subjectRepo.repoName + '-child')
+	createSparseWorktree(repoPath, child_folder, subjectRepo.mergeCommit, subjectRepo.conflictingFile)
+	logger.info("Prepared child version")
+
 	# Run git-merge to get the git-merge version
 	# Make a copy and change to left version
 
