@@ -9,7 +9,6 @@ import sys
 import logging
 import shutil
 import pathlib
-from logging import StreamHandler
 import subprocess
 
 from git import Repo
