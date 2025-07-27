@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # Script to run experiments
+import enum
 import glob
 import os
 import stat
@@ -48,6 +49,14 @@ class AbnormalBehaviourError(Exception):
 	# Any user-defined abnormal behaviour need to terminate the script can be found here
 	def __init__(self, message):
 		self.message = message
+
+
+class Merger(enum.Enum):
+	JDime = enum.auto()
+	FstMerge = enum.auto()
+	IntelliMerge = enum.auto()
+	AutoMerge = enum.auto()
+	Summer = enum.auto()
 
 
 def merge_with_JDime(input_path, output_path, mode, logger):
@@ -429,8 +438,9 @@ if __name__ == '__main__':
 --total_list	the path to the file containing all examples. If this option is missing, the path is derived from --path-prefix.
 --range	n1..n2	run experiments against examples from n1, inclusive to n2, exclusive. n1 starts at 0. If this option is missing, run all examples.
 
---summer=`path`	run the summer tool located at `path`.
---summer	run the summer tool. The summer executable is expected to be found in the PATH environment variable.		
+--merger path	
+run the merge at the given path. 
+{0} automatically checks if the merge is AutoMerge, FSTMerge, IntelliMerge, JDime, KDiff3, or summer.
 '''.format(sys.argv[0], pathlib.Path(__file__).parent.parent.resolve()))
 		exit(0)
 
@@ -454,19 +464,25 @@ if __name__ == '__main__':
 	except:
 		path_prefix = pathlib.Path(__file__).parent.parent.resolve()
 
-	runSummer = False
-	for opt in sys.argv:
-		if opt.startswith('--summer='):
-			summerPath = opt[len('--summer='):]
-			if not os.path.isfile(summerPath):
-				print(f'The path to the summer executable "{summerPath}" is not valid.', file=sys.stderr)
-				exit(1)
-			runSummer = True
-			break
-	if summerPath is None:
-		summerPath = 'summer'
-	if runSummer is False:
-		runSummer = '--summer' in sys.argv
+	try:
+		i = sys.argv.index('--merger')
+		mergerPath = sys.argv[i + 1]
+		if 'summer' in mergerPath.lower():
+			merger = Merger.Summer
+		elif 'automerge' in mergerPath.lower():
+			merger = Merger.AutoMerge
+		elif 'fstmerge' in mergerPath.lower():
+			merger = Merger.FstMerge
+		elif 'intellimerge' in mergerPath.lower():
+			merger = Merger.IntelliMerge
+		elif 'jdime' in mergerPath.lower():
+			merger = Merger.JDime
+		else:
+			print(f"Can't recognize the merger from path {mergerPath}. Name a folder or the file to the supported merger.", file=sys.stderr)
+			exit(1)
+	except:
+		print(f'Option --merger is required.', file=sys.stderr)
+		exit(1)
 
 	formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 	try:
