@@ -16,7 +16,7 @@ logger.setLevel(logging.INFO)
 
 
 def normalizeFile(filePath, normalizedFile):
-	with open(filePath, 'r', encoding='utf-8') as f:
+	with open(filePath, 'r', encoding='utf-8', errors='ignore') as f:
 		lines = f.readlines()
 
 	before_imports = []
