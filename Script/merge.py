@@ -154,8 +154,8 @@ def merge_with_AutoMerge(input_path, output_path):
 							os.path.join(input_path, "right"), MAX_WAITINGTIME_RESOLVE)
 
 
-def merge_with_summer(repo, leftSha, rightSha, baseSha, output_path, targetFile1, targetFile2=None):
-	cmd = f'{summerPath} merge -C {repo} -l {leftSha} -r {rightSha} -b {baseSha} --worktree {output_path} --keep -- {targetFile1}'
+def merge_with_summer(toolPath, repo, leftSha, rightSha, baseSha, output_path, targetFile1, targetFile2=None):
+	cmd = f'{toolPath} merge -C {repo} -l {leftSha} -r {rightSha} -b {baseSha} --worktree {output_path} --keep -- {targetFile1}'
 	if targetFile2 is not None and targetFile2 != targetFile1:
 		cmd += ' ' + targetFile2
 	try:
