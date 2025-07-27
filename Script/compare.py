@@ -90,15 +90,20 @@ def processExample(baseFolderActual, baseFolderExpected, subjectRepo: dataset.Su
 		normalizeFile(fileExpected, normalized)
 		fileExpected = normalized
 
-	cmd = f'git diff --no-index --ignore-all-space  -- {fileActual} {fileExpected}'
+	cmd = f'git diff --exit-code --no-index --ignore-all-space  -- {fileActual} {fileExpected}'
 	try:
-		proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
+		proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		stdout, stderr = proc.communicate()
-		csvFields[2] = len(stdout)
-		if len(stdout) > 0:
+		if proc.returncode == 0:
+			csvFields[2] = 0
+			logger.info('Fully matched')
+		elif proc.returncode == 1:
+			stdout = stdout.decode('utf-8', errors='ignore')
+			csvFields[2] = len(stdout)
 			logger.info(f'Merged file does not fully match actual file. Diff size is {len(stdout)}. Command is {cmd}')
 		else:
-			logger.info('Fully matched')
+			stderr = stderr.decode('utf-8', errors='ignore')
+			logger.error(f'Failed to run {cmd}: ' + stderr)
 	except:
 		logger.error(f'Failed to run {cmd}')
 
