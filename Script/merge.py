@@ -489,6 +489,19 @@ if __name__ == '__main__':
 	opt.LoadDataset()
 	opt.LoadRange()
 
+	if merger == Merger.FstMerge:
+		# clean up its temp folders.
+		# When FSMerge throws exceptions, it doesn't clean up.
+		workspaceFolder = os.path.join(path_prefix, workspace)
+		for entry in os.listdir(workspaceFolder):
+			full_path = os.path.join(workspaceFolder, entry)
+			# Check if it's a directory and if it matches the substring
+			if os.path.isdir(full_path) and 'fstmerge_tmp' in entry:
+				try:
+					shutil.rmtree(full_path)
+				except Exception as e:
+					print(f"Failed to delete {full_path}: {e}")
+
 	for i in opt.evaluationRange:
 		logger.info(f"Start processing project {i}, {opt.dataset[i].repoName}. Conflicting file is {pathlib.Path(opt.dataset[i].conflictingFile).name}.")
 		processExample(opt.dataset[i])
