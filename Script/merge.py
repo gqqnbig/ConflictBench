@@ -28,6 +28,7 @@ AutoMerge_executable_path = 'MergeTools/AutoMerge/AutoMerge.jar'
 summerPath = None
 
 commandLineError = 1
+toolError = 10
 
 # Set constant
 # Set the longest waiting time to wait for a task to execute (Unit: minutes)
@@ -109,10 +110,31 @@ def merge_with_FSTMerge(toolPath, repoDir, output_path, logger):
 		  f' --expression {configPath} --output-directory {output_path} --base-directory {pathlib.Path(repoDir).parent}'
 
 	logger.debug(f'cmd: {cmd}')
-	stdout = ProcessUtils.runProcess(cmd, MAX_WAITINGTIME_RESOLVE)
-	if logger.isEnabledFor(logging.DEBUG):
-		logger.debug(stdout.decode('utf-8', errors='ignore'))
 
+	# I can't call ProcessUtils.runProcess because FSTMerge can fail but still return exit code 0.
+	proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+	try:
+		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
+		errs = errs.decode('utf-8', errors='ignore')
+
+		if r'Cannot run program "C:\Programme\cygwin\bin\git.exe"' in errs or \
+				'unknown option: --merge-file' in errs:
+			logger.error('FSTMerge calls git with incorrect command line options. ' +
+						 'featurehouse_20220107.jar included in ConflictBench may only be used on Linux.\n' +
+						 'See https://github.com/joliebig/featurehouse/blob/81724157bc638524e72af5bb689cf939e6df8599/fstmerge/merger/LineBasedMerger.java#L93-L96')
+			exit(toolError)
+
+		if proc.returncode != 0:
+			if len(errs) > 500:
+				errs = f'Error message has {len(errs)} characters.'
+			raise ProcessException("Fail to run '" + cmd + "' in shell: " + errs)
+
+		if logger.isEnabledFor(logging.DEBUG):
+			logger.debug(outs.decode('utf-8', errors='ignore'))
+	except subprocess.TimeoutExpired:
+		# Terminate the unfinished process
+		proc.terminate()
+		raise ProcessException(f'{cmd} does not finish in time')
 
 
 def merge_with_IntelliMerge(input_path, output_path, logger):
