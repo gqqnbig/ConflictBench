@@ -450,7 +450,7 @@ logger = logging.getLogger('textual_conflict_logger')
 if __name__ == '__main__':
 	if '--help' in sys.argv:
 		print('''
-{0}
+{0}: run a merge tool on selected data examples
 
 --help	show this help.
 --log-file	specify the path of a log file. If this option is missing, log is not written to disk.
