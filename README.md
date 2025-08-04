@@ -22,6 +22,8 @@ mamba install -c conda-forge python=3.10 gitdb=4.0 GitPython=3.1 typing-extensio
 
 ## System Requirements
 
+Although this git repository is small, after fetching all data examples, this folder will take roughly 15GB space.
+
 According to the associated paper (ConflictBench: A benchmark to evaluate software merge tools), this test bench is best run on Ubuntu 22.04 desktop (Debian 12).
 
 To use this test bench on Windows, you should enable long path support because many Java repositories have paths more than 260 characters. In gpedit.msc, set `Computer Configuration > Administrative Templates > System > Filesystem > Enable Win32 long paths`. [ref](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation)
