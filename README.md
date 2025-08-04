@@ -1,5 +1,9 @@
 # ConflictBench
 
+This repository is divergent from the upstream because the upstream [commits](https://github.com/UBOWENVT/ConflictBench/commit/f1b6269132d12470d884c27893bafb7f04bfe673) thousands of evaluation output files in this repo as plain files, which unnecessarily bloats the repository and slows git operations. 
+
+In this repo, the evaluation result is provided as a downloadedable from https://drive.google.com/file/d/1UyHKtQEyFiIcfi-Y1aEmmpNbOQns645M/view?usp=drive_link .
+
 ## Benchmark driver
 
 The benchmark driver consists of a number of files in the Script folder. Python files with the executable bit and shebang are entry point files. Other files are to be imported.
