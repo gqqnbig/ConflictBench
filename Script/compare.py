@@ -92,7 +92,10 @@ def processExample(baseFolderActual, baseFolderExpected, subjectRepo: dataset.Su
 
 	cmd = f'git diff --exit-code --no-index --ignore-all-space  -- {fileActual} {fileExpected}'
 	try:
-		proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		# On POSIX, if args is a string, the string is interpreted as the name or path of the program to execute.
+		# On the other hand, the Windows API natively expects a string. So it's fine to pass the program path with arguments as one string to Popen().
+		isPosix = sys.platform == 'linux'
+		proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=isPosix)
 		stdout, stderr = proc.communicate()
 		if proc.returncode == 0:
 			csvFields[2] = 0
