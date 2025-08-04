@@ -27,6 +27,8 @@ IntelliMerge_executable_path = 'MergeTools/IntelliMerge/IntelliMerge-1.0.9-all.j
 AutoMerge_executable_path = 'MergeTools/AutoMerge/AutoMerge.jar'
 summerPath = None
 
+commandLineError = 1
+
 # Set constant
 # Set the longest waiting time to wait for a task to execute (Unit: minutes)
 MAX_WAITINGTIME_MERGE = 5 * 60
@@ -451,7 +453,7 @@ run the merge at the given path.
 				logger.setLevel(logging.DEBUG)
 			case _:
 				print(f'Log level must be info or debug. What you passed is {logLevel}', file=sys.stderr)
-				exit(1)
+				exit(commandLineError)
 	except:
 		logger.setLevel(logging.INFO)
 
@@ -476,10 +478,10 @@ run the merge at the given path.
 			merger = Merger.JDime
 		else:
 			print(f"Can't recognize the merger from path {mergerPath}. Name a folder or the file to the supported merger.", file=sys.stderr)
-			exit(1)
+			exit(commandLineError)
 	except:
 		print(f'Option --merger is required.', file=sys.stderr)
-		exit(1)
+		exit(commandLineError)
 
 	formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 	try:
