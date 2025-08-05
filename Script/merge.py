@@ -5,7 +5,6 @@ import datetime
 import enum
 import glob
 import os
-import stat
 import sys
 import logging
 import shutil
@@ -16,9 +15,9 @@ import time
 from git import Repo
 
 import dataset
+import mergeTools
 import optionUtils
 import ProcessUtils
-from ProcessUtils import ProcessException
 
 # Set path
 workspace = 'Resource/workspace'
@@ -136,46 +135,15 @@ def merge_with_FSTMerge(toolPath, repoDir, output_path, logger):
 		if proc.returncode != 0:
 			if len(errs) > 500:
 				errs = f'Error message has {len(errs)} characters.'
-			raise ProcessException("Fail to run '" + cmd + "' in shell: " + errs)
+			raise subprocess.SubprocessError("Fail to run '" + cmd + "' in shell: " + errs)
 
 		if logger.isEnabledFor(logging.DEBUG):
 			logger.debug(outs.decode('utf-8', errors='ignore'))
 	except subprocess.TimeoutExpired:
 		# Terminate the unfinished process
 		proc.terminate()
-		raise ProcessException(f'{cmd} does not finish in time')
+		raise subprocess.SubprocessError(f'{cmd} does not finish in time')
 
-
-def merge_with_IntelliMerge(input_path, output_path, logger):
-	proc = None
-	try:
-		# Run IntelliMerge
-		proc = subprocess.Popen("java -jar " +
-								os.path.join(path_prefix, IntelliMerge_executable_path) +
-								" " + "-d " +
-								os.path.join(input_path, "left") + " " +
-								os.path.join(input_path, "base") + " " +
-								os.path.join(input_path, "right") + " " +
-								"-o " + output_path,
-								stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
-		if proc.returncode == 0:
-			# Update logger
-			logger.info("Finish IntelliMerge")
-		else:
-			# Failed to run JDime
-			logger.info("Fail to run IntelliMerge")
-			raise AbnormalBehaviourError("Fail to run IntelliMerge")
-	except subprocess.TimeoutExpired:
-		# Terminate the unfinished process
-		if proc is not None:
-			proc.terminate()
-		# Timeout occur
-		# Update logger
-		logger.error("Fail to run IntelliMerge in time")
-		raise AbnormalBehaviourError("Fail to run IntelliMerge in time")
-	finally:
-		pass
 
 
 def merge_with_AutoMerge(toolPath, left, base, right, output_path, logger):
@@ -190,11 +158,11 @@ def merge_with_AutoMerge(toolPath, left, base, right, output_path, logger):
 		if proc.returncode != 0:
 			errs = errs.decode('utf-8', errors='ignore')
 			errs = errs[0:min(500, len(errs))]
-			raise ProcessException("Fail to run '" + cmd + "' in shell: " + errs)
+			raise subprocess.SubprocessError("Fail to run '" + cmd + "' in shell: " + errs)
 	except subprocess.TimeoutExpired:
 		# Terminate the unfinished process
 		proc.terminate()
-		raise ProcessException(f'{cmd} does not finish in time')
+		raise subprocess.SubprocessError(f'{cmd} does not finish in time')
 
 
 def merge_with_summer(toolPath, repo, leftSha, rightSha, baseSha, output_path, targetFile1, targetFile2=None):
@@ -206,8 +174,8 @@ def merge_with_summer(toolPath, repo, leftSha, rightSha, baseSha, output_path, t
 		stdout = ProcessUtils.runProcess(cmd, MAX_WAITINGTIME_RESOLVE)
 		if logger.isEnabledFor(logging.DEBUG):
 			logger.debug(stdout.decode('utf-8', errors='ignore'))
-	except ProcessException as e:
-		logger.error(e.message)
+	except subprocess.SubprocessError as e:
+		logger.error(e)
 
 
 # merge two commits
@@ -346,6 +314,15 @@ def processExample(merger: Merger, mergerPath, subjectRepo: dataset.SubjectRepo)
 			(base_folder, left_Folder, right_folder, child_folder) = create4Worktrees(subjectRepo, os.path.join(path_prefix, workspace), repoPath)
 			try:
 				merge_with_AutoMerge(mergerPath, left_Folder, base_folder, right_folder, mergeResultFolder, logger)
+			except Exception as e:
+				logger.error(e)
+				return
+		case Merger.IntelliMerge:
+			mergeResultFolder = toolResultFolder / subjectRepo.repoName
+			mergeResultFolder.mkdir(exist_ok=True)
+			(base_folder, left_Folder, right_folder, child_folder) = create4Worktrees(subjectRepo, os.path.join(path_prefix, workspace), repoPath)
+			try:
+				mergeTools.runIntelliMerge(mergerPath, left_Folder, base_folder, right_folder, mergeResultFolder, logger)
 			except Exception as e:
 				logger.error(e)
 				return
