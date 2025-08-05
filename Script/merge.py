@@ -252,27 +252,31 @@ def prepare_repo(local_path, project_url, sha):
 	repo.git.checkout(sha, force=True)
 
 
-def on_rm_error(func, path, excinfo):
-	# path contains the path of the file that couldn't be removed
-	# let's just assume that it's read-only and unlink it.
-	if type(excinfo) is PermissionError and excinfo.errno == 13:
-		os.chmod(path, stat.S_IWRITE)
-		os.unlink(path)
+def create4Worktrees(subjectRepo, workspace, mainWorktree):
+	"""
+	From the main worktree, create 4 worktrees: base, left, right, and child (merged).
 
+	:param subjectRepo:
+	:param workspace:
+	:param mainWorktree:
+	:return: (base_folder, left_Folder, right_folder, child_folder)
+	"""
+	base_folder = os.path.join(workspace, subjectRepo.repoName + '-base')
+	createSparseWorktree(mainWorktree, base_folder, subjectRepo.baseCommit, subjectRepo.conflictingFile)
+	logger.debug("Prepared base version")
 
-def createBranchVersion(project_name, folderName):
-	try:
-		dst = os.path.join(path_prefix, workspace, folderName)
-		shutil.rmtree(dst, onexc=on_rm_error)
-		shutil.copytree(os.path.join(path_prefix, workspace, project_name), dst, symlinks=True)
-	except shutil.Error as e:
-		print(f'Error in creating the {folderName} folder:', file=sys.stderr)
-		for arg in e.args[0]:
-			print(arg[2], file=sys.stderr)
-		exit(1)
-	except IOError as e:
-		print(f'Error in creating the {folderName} folder: ' + str(e), file=sys.stderr)
-		exit(1)
+	left_Folder = os.path.join(workspace, subjectRepo.repoName + '-left')
+	createSparseWorktree(mainWorktree, left_Folder, subjectRepo.leftCommit, subjectRepo.conflictingFile)
+	logger.debug("Prepared left version")
+
+	right_folder = os.path.join(workspace, subjectRepo.repoName + '-right')
+	createSparseWorktree(mainWorktree, right_folder, subjectRepo.rightCommit, subjectRepo.conflictingFile)
+	logger.debug("Prepared right version")
+
+	child_folder = os.path.join(workspace, subjectRepo.repoName + '-child')
+	createSparseWorktree(mainWorktree, child_folder, subjectRepo.mergeCommit, subjectRepo.conflictingFile)
+	logger.debug("Prepared child version")
+	return (base_folder, left_Folder, right_folder, child_folder)
 
 
 def processExample(merger: Merger, mergerPath, subjectRepo: dataset.SubjectRepo):
@@ -308,23 +312,7 @@ def processExample(merger: Merger, mergerPath, subjectRepo: dataset.SubjectRepo)
 				pass
 		case Merger.FstMerge:
 			pathlib.Path(os.path.join(resultFolder, 'FSTMerge')).mkdir(exist_ok=True)
-
-			base_folder = os.path.join(path_prefix, workspace, subjectRepo.repoName + '-base')
-			createSparseWorktree(repoPath, base_folder, subjectRepo.baseCommit, subjectRepo.conflictingFile)
-			logger.debug("Prepared base version")
-
-			left_Folder = os.path.join(path_prefix, workspace, subjectRepo.repoName + '-left')
-			createSparseWorktree(repoPath, left_Folder, subjectRepo.leftCommit, subjectRepo.conflictingFile)
-			logger.debug("Prepared left version")
-
-			right_folder = os.path.join(path_prefix, workspace, subjectRepo.repoName + '-right')
-			createSparseWorktree(repoPath, right_folder, subjectRepo.rightCommit, subjectRepo.conflictingFile)
-			logger.debug("Prepared right version")
-
-			child_folder = os.path.join(path_prefix, workspace, subjectRepo.repoName + '-child')
-			createSparseWorktree(repoPath, child_folder, subjectRepo.mergeCommit, subjectRepo.conflictingFile)
-			logger.debug("Prepared child version")
-
+			create4Worktrees(subjectRepo, os.path.join(path_prefix, workspace), repoPath)
 			try:
 				merge_with_FSTMerge(mergerPath, repoPath, os.path.join(resultFolder, 'FSTMerge'), logger)
 				logger.info("FSTMerge solution generated")
