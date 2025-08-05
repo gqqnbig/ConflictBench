@@ -1,11 +1,6 @@
 import subprocess
 
 
-class ProcessException(Exception):
-	def __init__(self, message):
-		self.message = message
-
-
 def runProcess(cmd, timeout) -> bytes:
 	"""
 
@@ -20,10 +15,10 @@ def runProcess(cmd, timeout) -> bytes:
 			errs = errs.decode('utf-8', errors='ignore')
 			if len(errs) > 500:
 				errs = f'Error message has {len(errs)} characters.'
-			raise ProcessException("Fail to run '" + cmd + "' in shell: " + errs)
+			raise subprocess.SubprocessError("Fail to run '" + cmd + "' in shell: " + errs)
 
 		return outs
 	except subprocess.TimeoutExpired:
 		# Terminate the unfinished process
 		proc.terminate()
-		raise ProcessException(f'{cmd} does not finish in time')
+		raise subprocess.SubprocessError(f'{cmd} does not finish in time')
