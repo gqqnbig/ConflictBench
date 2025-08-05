@@ -99,6 +99,14 @@ def merge_with_JDime(input_path, output_path, mode, logger):
 
 
 def merge_with_FSTMerge(toolPath, repoDir, output_path, logger):
+	"""
+
+	:param toolPath:
+	:param repoDir:
+	:param output_path:
+	:param logger: for debug info and critical error. Do not raise an exception as well as writing to log.
+	:return:
+	"""
 	# Create merge.config at first
 	repoName = pathlib.Path(repoDir).name
 	configPath = os.path.normpath(os.path.join(output_path, repoName + ".config"))
