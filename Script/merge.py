@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # Script to run experiments
+import datetime
 import enum
 import glob
 import os
@@ -10,6 +11,7 @@ import logging
 import shutil
 import pathlib
 import subprocess
+import time
 
 from git import Repo
 
@@ -315,6 +317,8 @@ def processExample(merger: Merger, mergerPath, subjectRepo: dataset.SubjectRepo)
 	resultFolder = os.path.join(path_prefix, workspace, 'result')
 	pathlib.Path(resultFolder).mkdir(exist_ok=True)
 
+	toolResultFolder = pathlib.Path(resultFolder, Merger(merger).value)
+	toolResultFolder.mkdir(exist_ok=True)
 	match merger:
 		case Merger.Summer:
 			pathlib.Path(os.path.join(resultFolder, 'summer')).mkdir(exist_ok=True)
@@ -338,15 +342,28 @@ def processExample(merger: Merger, mergerPath, subjectRepo: dataset.SubjectRepo)
 				logger.error(e)
 
 		case Merger.AutoMerge:
-			toolResultFolder = os.path.join(resultFolder, 'AutoMerge')
-			pathlib.Path(toolResultFolder).mkdir(exist_ok=True)
+			mergeResultFolder = toolResultFolder / subjectRepo.repoName
+			mergeResultFolder.mkdir(exist_ok=True)
 			(base_folder, left_Folder, right_folder, child_folder) = create4Worktrees(subjectRepo, os.path.join(path_prefix, workspace), repoPath)
 			try:
-				merge_with_AutoMerge(mergerPath, left_Folder, base_folder, right_folder, toolResultFolder, logger)
-				logger.info("AutoMerge solution generated")
+				merge_with_AutoMerge(mergerPath, left_Folder, base_folder, right_folder, mergeResultFolder, logger)
 			except Exception as e:
 				logger.error(e)
+				return
 
+	for item in (toolResultFolder / subjectRepo.repoName).rglob('*'):
+		if os.path.isfile(item):
+			if item.name.endswith('-normalized.java'):
+				continue
+			if time.time() - os.path.getmtime(item) <= 10:
+
+				logger.info(f"{Merger(merger).value} solution generated")
+			else:
+				logger.warning(f'File {item} is lastly modified on {datetime.datetime.fromtimestamp(os.path.getmtime(item)).isoformat(timespec='seconds')}. ' +
+							   f'You may want to clean up {toolResultFolder}.')
+			return
+
+	logger.info(f'{Merger(merger).value} fails to write any files.')
 	return
 
 	# Run git-merge to get the git-merge version
