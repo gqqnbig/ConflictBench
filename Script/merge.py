@@ -24,7 +24,6 @@ logger_path = 'Logger'
 output_path = 'Resource/output'
 JDime_executable_path = 'MergeTools/JDime/bin/JDime'
 IntelliMerge_executable_path = 'MergeTools/IntelliMerge/IntelliMerge-1.0.9-all.jar'
-AutoMerge_executable_path = 'MergeTools/AutoMerge/AutoMerge.jar'
 summerPath = None
 
 commandLineError = 1
@@ -177,13 +176,23 @@ def merge_with_IntelliMerge(input_path, output_path, logger):
 		pass
 
 
-def merge_with_AutoMerge(input_path, output_path):
-	ProcessUtils.runProcess("java -jar " +
-							os.path.join(path_prefix, AutoMerge_executable_path) +
-							" " + "-o " + output_path + " -m structured -log info -f -S " +
-							os.path.join(input_path, "left") + " " +
-							os.path.join(input_path, "base") + " " +
-							os.path.join(input_path, "right"), MAX_WAITINGTIME_RESOLVE)
+def merge_with_AutoMerge(toolPath, left, base, right, output_path):
+	# I can't use ProcessUtils.runProcess because AutoMerge needs to look up the git library.
+	cmd = f"{javaPath} -jar {toolPath} -o {output_path} -m structured -log info -f -S {left} {base} {right}"
+	# Place the libgit binary at the same folder as the jar, unless the library is globally installed.
+	cwd = pathlib.Path(toolPath).parent
+	proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, cwd=cwd)
+	try:
+		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
+		if proc.returncode != 0:
+			errs = errs.decode('utf-8', errors='ignore')
+			if len(errs) > 500:
+				errs = f'Error message has {len(errs)} characters.'
+			raise ProcessException("Fail to run '" + cmd + "' in shell: " + errs)
+	except subprocess.TimeoutExpired:
+		# Terminate the unfinished process
+		proc.terminate()
+		raise ProcessException(f'{cmd} does not finish in time')
 
 
 def merge_with_summer(toolPath, repo, leftSha, rightSha, baseSha, output_path, targetFile1, targetFile2=None):
@@ -327,6 +336,16 @@ def processExample(merger: Merger, mergerPath, subjectRepo: dataset.SubjectRepo)
 			except Exception as e:
 				logger.error(e)
 
+		case Merger.AutoMerge:
+			toolResultFolder = os.path.join(resultFolder, 'AutoMerge')
+			pathlib.Path(toolResultFolder).mkdir(exist_ok=True)
+			(base_folder, left_Folder, right_folder, child_folder) = create4Worktrees(subjectRepo, os.path.join(path_prefix, workspace), repoPath)
+			try:
+				merge_with_AutoMerge(mergerPath, left_Folder, base_folder, right_folder, toolResultFolder)
+				logger.info("AutoMerge solution generated")
+			except Exception as e:
+				logger.error(e)
+
 	return
 
 	# Run git-merge to get the git-merge version
@@ -408,17 +427,6 @@ def processExample(merger: Merger, mergerPath, subjectRepo: dataset.SubjectRepo)
 		# continue
 		commit['JDime_mergeable'] = True
 		commit['IntelliMerge_mergeable'] = True
-
-		if '--auto-merge' in sys.argv:
-			pathlib.Path(os.path.join(resultFolder, 'AutoMerge')).mkdir()
-			commit['AutoMerge_mergeable'] = True
-			try:
-				merge_with_AutoMerge(os.path.join(path_prefix, workspace),
-									 os.path.join(resultFolder, 'AutoMerge'))
-				commit['AutoMerge_solution_generation'] = True
-				logger.info("AutoMerge solution generated")
-			except AbnormalBehaviourError as e:
-				commit['AutoMerge_solution_generation'] = False
 
 	pathlib.Path(os.path.join(resultFolder, 'JDime')).mkdir()
 	pathlib.Path(os.path.join(resultFolder, 'IntelliMerge')).mkdir()
@@ -535,6 +543,14 @@ run the merge at the given path.
 				except Exception as e:
 					print(f"Failed to delete {full_path}: {e}")
 
+	try:
+		i = sys.argv.index('--java')
+		javaPath = sys.argv[i + 1]
+	except:
+		javaPath = 'java'
+
+	# print(ProcessUtils.runProcess('java -version', None).decode('utf-8', errors='ignore'))
+	# exit(0)
 	for i in opt.evaluationRange:
 		logger.info(f"Start processing project {i}, {opt.dataset[i].repoName}. Conflicting file is {pathlib.Path(opt.dataset[i].conflictingFile).name}.")
 		processExample(merger, mergerPath, opt.dataset[i])
