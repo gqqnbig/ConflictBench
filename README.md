@@ -53,7 +53,7 @@ AutoMerge requires JavaFX. Adoptium JDK may not work.[ref](https://github.com/ad
 
 ├── `MergeTools`
 
-│	 ├── `AutoMerge`
+│	 ├── `AutoMerge`, built by Java 8 (major version 52)
 
 │	 ├── `FSTMerge`
 
