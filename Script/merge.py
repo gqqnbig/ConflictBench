@@ -359,7 +359,8 @@ def processExample(merger: Merger, mergerPath, subjectRepo: dataset.SubjectRepo)
 
 				logger.info(f"{Merger(merger).value} solution generated")
 			else:
-				logger.warning(f'File {item} is lastly modified on {datetime.datetime.fromtimestamp(os.path.getmtime(item)).isoformat(timespec='seconds')}. ' +
+				mtime = datetime.datetime.fromtimestamp(os.path.getmtime(item)).isoformat(timespec='seconds')
+				logger.warning(f'File {item} is lastly modified on {mtime}. ' +
 							   f'You may want to clean up {toolResultFolder}.')
 			return
 
