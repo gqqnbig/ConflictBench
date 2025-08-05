@@ -52,11 +52,11 @@ class AbnormalBehaviourError(Exception):
 
 
 class Merger(enum.Enum):
-	JDime = enum.auto()
-	FstMerge = enum.auto()
-	IntelliMerge = enum.auto()
-	AutoMerge = enum.auto()
-	Summer = enum.auto()
+	JDime = "JDime"
+	FstMerge = "FSTMerge"
+	IntelliMerge = "IntelliMerge"
+	AutoMerge = "AutoMerge"
+	Summer = "Summer"
 
 
 def merge_with_JDime(input_path, output_path, mode, logger):
