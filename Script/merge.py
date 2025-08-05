@@ -189,8 +189,7 @@ def merge_with_AutoMerge(toolPath, left, base, right, output_path, logger):
 		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
 		if proc.returncode != 0:
 			errs = errs.decode('utf-8', errors='ignore')
-			if len(errs) > 500:
-				errs = f'Error message has {len(errs)} characters.'
+			errs = errs[0:min(500, len(errs))]
 			raise ProcessException("Fail to run '" + cmd + "' in shell: " + errs)
 	except subprocess.TimeoutExpired:
 		# Terminate the unfinished process
