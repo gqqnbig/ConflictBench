@@ -176,11 +176,12 @@ def merge_with_IntelliMerge(input_path, output_path, logger):
 		pass
 
 
-def merge_with_AutoMerge(toolPath, left, base, right, output_path):
+def merge_with_AutoMerge(toolPath, left, base, right, output_path, logger):
 	# I can't use ProcessUtils.runProcess because AutoMerge needs to look up the git library.
 	cmd = f"{javaPath} -jar {toolPath} -o {output_path} -m structured -log info -f -S {left} {base} {right}"
 	# Place the libgit binary at the same folder as the jar, unless the library is globally installed.
 	cwd = pathlib.Path(toolPath).parent
+	logger.debug(f'cmd: {cmd}')
 	proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, cwd=cwd)
 	try:
 		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
@@ -341,7 +342,7 @@ def processExample(merger: Merger, mergerPath, subjectRepo: dataset.SubjectRepo)
 			pathlib.Path(toolResultFolder).mkdir(exist_ok=True)
 			(base_folder, left_Folder, right_folder, child_folder) = create4Worktrees(subjectRepo, os.path.join(path_prefix, workspace), repoPath)
 			try:
-				merge_with_AutoMerge(mergerPath, left_Folder, base_folder, right_folder, toolResultFolder)
+				merge_with_AutoMerge(mergerPath, left_Folder, base_folder, right_folder, toolResultFolder, logger)
 				logger.info("AutoMerge solution generated")
 			except Exception as e:
 				logger.error(e)
