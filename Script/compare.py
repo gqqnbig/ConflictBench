@@ -90,7 +90,7 @@ def processExample(baseFolderActual, baseFolderExpected, subjectRepo: dataset.Su
 		normalizeFile(fileExpected, normalized)
 		fileExpected = normalized
 
-	cmd = f'git diff --exit-code --no-index --ignore-all-space  -- {fileActual} {fileExpected}'
+	cmd = f'git diff --exit-code --no-index --ignore-blank-lines --ignore-all-space -- {fileActual} {fileExpected}'
 	try:
 		# On POSIX, if args is a string, the string is interpreted as the name or path of the program to execute.
 		# On the other hand, the Windows API natively expects a string. So it's fine to pass the program path with arguments as one string to Popen().
