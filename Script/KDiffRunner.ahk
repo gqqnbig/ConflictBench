@@ -32,13 +32,6 @@ CheckForModalDialog(hwnd)
     return false
 }
 
-hwnd:=WinGetID('A')
-if CheckForModalDialog(hwnd)
-{
-	title:=WinGetTitle(hwnd)
-	msgbox title
-}
-
 cmd:=quotePath(A_Args[1]) . ' ' . quotePath(A_Args[2]) . ' ' . quotePath(A_Args[3]) . ' ' . quotePath(A_Args[4]) . ' -o ' . quotePath(A_Args[5]) . ' -m --auto --cs ShowInfoDialogs=0 --cs FileAntiPattern=.git'
 
 ;msgbox cmd
@@ -51,9 +44,6 @@ if WinWaitActive('Information - KDiff3 ' . 'ahk_pid' . pid, , 5)
 	;msgbox "Information window found"
 	sleep 1000
 	send "{F7}"
-	WinWaitActive('Starting Merge ' . 'ahk_pid' . pid, , 2)
-	; start merging
-	send "!d"
 
 	Loop {
 		sleep 1000
@@ -62,19 +52,53 @@ if WinWaitActive('Information - KDiff3 ' . 'ahk_pid' . pid, , 5)
 		if CheckForModalDialog(hwnd)
 		{
 			title:=WinGetTitle(hwnd)
-			msgbox title
+			if title = 'Dialog - KDiff3'
+				continue
+			else if title = 'Starting Merge - KDiff3'
+			{
+				sleep 100
+				send "!d"
+			}
+			else
+				msgbox 'loop1' . title
 		}
+		else
+			break
 	}
-	if WinWaitActive('Error ' . 'ahk_pid' . pid, , 2)
-	{
-		; error in merging
-		;ProcessClose(pid)
-		exit 1
-	}
-	
+
+	; there is no more dialog. KDiff is on its main window.
+	sleep 1000
 	send "^s"
 	sleep 1000
-	;ProcessClose(pid)
+	; Merge one more time
+	send '{F7}'
+	
+	Loop {
+		sleep 1000
+
+		hwnd:=WinGetID('A')
+		if CheckForModalDialog(hwnd)
+		{
+			title:=WinGetTitle(hwnd)
+			if title == 'Merge Complete - KDiff3'
+			{
+				send '{enter}'
+				sleep 500				
+				ProcessClose(pid)
+				exit 0
+			}
+			else if title = 'Starting Merge - KDiff3'
+			{
+				; already merged
+				ProcessClose(pid)
+				exit 0
+			}
+			else
+				msgbox "loop2" . title
+		}
+		else
+			break
+	}
 }
 else
 	msgbox "not found"
