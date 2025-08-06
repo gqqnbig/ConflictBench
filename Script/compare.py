@@ -119,6 +119,9 @@ if __name__ == '__main__':
 {0}
 
 --help	show this help.
+--merger str
+The name of the merger, not path.
+
 --log-file file	
 specify the path of a log file. If this option is missing, log is not written to disk.
 
@@ -162,7 +165,13 @@ Write a CSV report.
 		csvWriter = None
 
 	baseFolderExpected = os.path.join(opt.path_prefix, 'Resource/workspace')
-	baseFolderActual = os.path.join(opt.path_prefix, 'Resource/workspace/result/summer')
+
+	try:
+		i = sys.argv.index('--merger')
+		baseFolderActual = os.path.join(opt.path_prefix, 'Resource/workspace/result/', sys.argv[i + 1])
+	except:
+		print('Option --merger is required.', file=sys.stderr)
+		exit(1)
 
 	for i in opt.evaluationRange:
 		logger.info(f"Start verifying project {i} {opt.dataset[i].repoName}")
