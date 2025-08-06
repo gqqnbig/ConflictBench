@@ -58,6 +58,7 @@ class Merger(enum.Enum):
 	IntelliMerge = "IntelliMerge"
 	AutoMerge = "AutoMerge"
 	Summer = "Summer"
+	KDiff = 'KDiff'
 
 
 def merge_with_JDime(input_path, output_path, mode, logger):
@@ -143,7 +144,6 @@ def merge_with_FSTMerge(toolPath, repoDir, output_path, logger):
 		# Terminate the unfinished process
 		proc.terminate()
 		raise subprocess.SubprocessError(f'{cmd} does not finish in time')
-
 
 
 def merge_with_AutoMerge(toolPath, left, base, right, output_path, logger):
@@ -267,17 +267,7 @@ def create4Worktrees(subjectRepo, workspace, mainWorktree):
 
 
 def processExample(merger: Merger, mergerPath, subjectRepo: dataset.SubjectRepo):
-	# Read merge scenario information
-	# project_url = example['repo_url']
-	# project_name = example['project_name']
-	# commit = {}
-	# commit['base'] = example['base_hash']
-	# commit['left'] = example['left_hash']
-	# commit['right'] = example['right_hash']
-	# commit['child'] = example['child_hash']
-	# file_path = example['conflicting_file']
-
-	os.chdir(os.path.join(path_prefix, workspace))
+	# os.chdir(os.path.join(path_prefix, workspace))
 	repoPath = os.path.join(path_prefix, workspace, subjectRepo.repoName)
 	prepare_repo(repoPath, subjectRepo.repoUrl, subjectRepo.mergeCommit)
 
@@ -323,6 +313,17 @@ def processExample(merger: Merger, mergerPath, subjectRepo: dataset.SubjectRepo)
 			(base_folder, left_Folder, right_folder, child_folder) = create4Worktrees(subjectRepo, os.path.join(path_prefix, workspace), repoPath)
 			try:
 				mergeTools.runIntelliMerge(mergerPath, left_Folder, base_folder, right_folder, mergeResultFolder, logger)
+			except Exception as e:
+				logger.error(e)
+				return
+		case Merger.KDiff:
+			mergeResultFolder = toolResultFolder / subjectRepo.repoName
+			mergeResultFolder.mkdir(exist_ok=True)
+			(base_folder, left_Folder, right_folder, child_folder) = create4Worktrees(subjectRepo, os.path.join(path_prefix, workspace), repoPath)
+			try:
+				if False is mergeTools.runKDiff3(mergerPath, left_Folder, base_folder, right_folder, mergeResultFolder, logger):
+					logger.info('KDiff failed.')
+					return
 			except Exception as e:
 				logger.error(e)
 				return
@@ -497,6 +498,8 @@ run the merge at the given path.
 			merger = Merger.IntelliMerge
 		elif 'jdime' in mergerPath.lower():
 			merger = Merger.JDime
+		elif 'kdiff' in mergerPath.lower():
+			merger = Merger.KDiff
 		else:
 			print(f"Can't recognize the merger from path {mergerPath}. Name a folder or the file to the supported merger.", file=sys.stderr)
 			exit(commandLineError)
