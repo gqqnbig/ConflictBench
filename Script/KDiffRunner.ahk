@@ -102,6 +102,16 @@ Loop {
 			sleep 100
 			send "!d"
 		}
+		else if InStr(title, 'Error')
+		{
+			message := GetDialogMessage('ahk_id ' . hwnd)
+			if InStr(message, 'Select what to do')
+			{
+				; The file path conflict. 
+				ProcessClose(pid)
+				exit 1
+			}
+		}
 		else
 			msgbox 'loop1' . title
 	}
