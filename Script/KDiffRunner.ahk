@@ -68,39 +68,59 @@ GetDialogMessage(winTitle)
 
 }
 
-cmd:=quotePath(A_Args[1]) . ' ' . quotePath(A_Args[2]) . ' ' . quotePath(A_Args[3]) . ' ' . quotePath(A_Args[4]) . ' -o ' . quotePath(A_Args[5]) . ' -m --auto --cs ShowInfoDialogs=0 --cs FileAntiPattern=.git'
-
-;msgbox cmd
-pid:=0
-run cmd,,, &pid
-
-if ! WinWaitActive('Information - KDiff3 ' . 'ahk_pid' . pid, , 5)
+CheckMergeResult(mainWindow)
 {
-	msgbox 'failed to find KDiff window'
-	exit 1
+
+	if IsSaveable('ahk_id ' . mainWindow)
+	{
+		send "^s"
+		sleep 1000
+		
+		return
+	}
+	else
+	{
+		; file has conflicts
+		ProcessClose(pid)
+		ExitApp 1
+	}
 }
 
-send "{enter}"
-;msgbox "Information window found"
-sleep 1000
-send "{F7}"
+MergeOnce(mainWindow, begin)
+{
 
-Loop {
-	cpu := GetProcessCPUUsage(pid)
-	tooltip cpu
-	if cpu > 2
-		continue
+	send "{F7}"
+
+	sleep 1000
+	
+	;debugging
+	;Exit
+
+	While GetProcessCPUUsage(pid) > 2
+	{}
 
 	hwnd:=WinGetID('A')
 	if CheckForModalDialog(hwnd)
 	{
 		title:=WinGetTitle(hwnd)
-		if title = 'Dialog - KDiff3'
-			continue
-		else if title = 'Starting Merge - KDiff3'
+		if title = 'Starting Merge - KDiff3'
 		{
-			sleep 100
-			send "!d"
+			if begin
+			{
+				sleep 100
+				send "!d"
+				Tooltip('New merge starts')
+
+				While GetProcessCPUUsage(pid) > 2
+				{}
+			}
+			else
+			{
+				; The merge is a single file. It has been merged. 
+				; A new round of merging starts.
+				ProcessClose(pid)
+				ExitApp 0
+			}
 		}
 		else if InStr(title, 'Error')
 		{
@@ -109,42 +129,48 @@ Loop {
 			{
 				; The file path conflict. 
 				ProcessClose(pid)
-				exit 1
+				ExitApp 1
 			}
+		}
+		else if InStr(title, 'Merge Complete')
+		{
+			; This message shows when there is a folder sturcture in the merging scope.
+			ProcessClose(pid)
+			ExitApp 0
 		}
 		else
 			msgbox 'loop1' . title
 	}
 	else
-		break
+		Tooltip('Continu merging')
+
+	CheckMergeResult(mainWindow)
+}
+
+cmd:=quotePath(A_Args[1]) . ' ' . quotePath(A_Args[2]) . ' ' . quotePath(A_Args[3]) . ' ' . quotePath(A_Args[4]) . ' -o ' . quotePath(A_Args[5]) . ' -m --auto --cs ShowInfoDialogs=0 --cs FileAntiPattern=.git'
+
+;msgbox cmd
+pid:=0
+run cmd,,, &pid
+
+if ! WinWaitActive('Information - KDiff3 ' . 'ahk_pid ' . pid, , 5)
+{
+	msgbox 'failed to find KDiff window'
+	ExitApp 1
 }
 
 
-; there is no more dialog. KDiff is on its main window.
+send "{enter}"
+;msgbox "Information window found"
 sleep 1000
 
-if IsSaveable('ahk_id ' . hwnd)
+mainWindow:=WinGetID('ahk_pid ' . pid)
+
+MergeOnce(mainWindow, true)
+loop
 {
-	send "^s"
-	sleep 1000
-	
-	loop {
-		cpu := GetProcessCPUUsage(pid)
-		tooltip cpu
-		if cpu > 2
-			continue
-		else
-			break
-	}
-	
-	ProcessClose(pid)
-	exit 0
-	
+	; MergeOnce will exit the program.
+	MergeOnce(mainWindow, false)
 }
-else
-{
-	; file has conflicts
-	ProcessClose(pid)
-	exit 1
-}
+
 
