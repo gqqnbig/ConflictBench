@@ -372,7 +372,7 @@ run the merge at the given path.
 	if merger == Merger.FstMerge:
 		# clean up its temp folders.
 		# When FSMerge throws exceptions, it doesn't clean up.
-		workspaceFolder = os.path.join(path_prefix, workspace)
+		workspaceFolder = os.path.join(path_prefix, workspace, 'result', 'FSTMerge')
 		for entry in os.listdir(workspaceFolder):
 			full_path = os.path.join(workspaceFolder, entry)
 			# Check if it's a directory and if it matches the substring
