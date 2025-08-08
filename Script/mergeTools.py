@@ -79,7 +79,7 @@ def runWiggle(toolPath, left, base, right, output_path, logger, repo):
 	outputFile = pathlib.Path(output_path) / repo.conflictingFile
 	outputFile.parent.mkdir(exist_ok=True, parents=True)
 	cmd = [toolPath,
-		   '--merge', baseFile, rightFile, rightFile,
+		   '--merge', baseFile, leftFile, rightFile,
 		   '--output', outputFile]
 
 	proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
