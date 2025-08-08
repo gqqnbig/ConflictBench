@@ -8,6 +8,9 @@ def runProcess(cmd, timeout) -> bytes:
 	:param timeout:
 	:return: stdout
 	"""
+
+	# The behavior of subprocess.Popen depends on the platform.
+	# On POSIX, if shell is true and cmd is a list, list is passed to the shell, not the program.
 	proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 	try:
 		outs, errs = proc.communicate(timeout=timeout)

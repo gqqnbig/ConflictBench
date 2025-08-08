@@ -73,12 +73,25 @@ def runWiggle(toolPath, left, base, right, output_path, logger, repo):
 	baseFile = pathlib.Path(base) / repo.conflictingFile
 	leftFile = pathlib.Path(left) / repo.conflictingFile
 	rightFile = pathlib.Path(right) / repo.conflictingFile
-	if baseFile.exists() and leftFile.exists() and rightFile.exists():
-		outputFile = pathlib.Path(output_path) / repo.conflictingFile
-		outputFile.parent.mkdir(exist_ok=True, parents=True)
-		cmd = [toolPath,
-			   '--merge', baseFile, rightFile, rightFile,
-			   '--output', outputFile]
-		ProcessUtils.runProcess(cmd, MAX_WAITINGTIME_RESOLVE)
-	else:
+	if baseFile.exists() is False or leftFile.exists() is False or rightFile.exists() is False:
 		raise Exception("wiggle can't deal with file renaming.")
+
+	outputFile = pathlib.Path(output_path) / repo.conflictingFile
+	outputFile.parent.mkdir(exist_ok=True, parents=True)
+	cmd = [toolPath,
+		   '--merge', baseFile, rightFile, rightFile,
+		   '--output', outputFile]
+
+	proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	try:
+		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
+		if proc.returncode != 0:
+			errs = errs.decode('utf-8', errors='ignore')
+			if len(errs) > 500:
+				errs = f'Error message has {len(errs)} characters.'
+			cmd = '(quoting skipped) ' + ' '.join([str(c) for c in cmd])
+			raise subprocess.SubprocessError("Fail to run '" + cmd + "' in shell: " + errs)
+	except subprocess.TimeoutExpired:
+		# Terminate the unfinished process
+		proc.terminate()
+		raise subprocess.SubprocessError(f'{cmd} does not finish in time')
