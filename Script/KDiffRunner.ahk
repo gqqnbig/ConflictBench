@@ -122,6 +122,13 @@ MergeOnce(mainWindow, begin)
 				ExitApp 0
 			}
 		}
+		else if InStr(title, 'Information')
+		{
+			message := GetDialogMessage('ahk_id ' . hwnd)
+			if InStr(message, 'could not be converted to valid unicode')
+				send '{enter}'
+
+		}
 		else if InStr(title, 'Error')
 		{
 			message := GetDialogMessage('ahk_id ' . hwnd)
