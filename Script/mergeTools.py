@@ -1,5 +1,8 @@
+import pathlib
 import subprocess
 import threading
+
+import ProcessUtils
 
 # maximum waiting time to resolve a merge conflict.
 MAX_WAITINGTIME_RESOLVE = 3 * 60
@@ -81,3 +84,16 @@ def runKDiff3(toolPath, left, base, right, output_path, logger):
 
 # watcher.join()
 # return not result['conflict']
+
+
+def runWiggle(toolPath, left, base, right, output_path, logger, repo):
+	baseFile = pathlib.Path(base) / repo.conflictingFile
+	leftFile = pathlib.Path(left) / repo.conflictingFile
+	rightFile = pathlib.Path(right) / repo.conflictingFile
+	if baseFile.exists() and leftFile.exists() and rightFile.exists():
+		outputFile = pathlib.Path(output_path) / repo.conflictingFile
+		outputFile.parent.mkdir(exist_ok=True)
+		cmd = f'{toolPath} --merge {baseFile} {rightFile} {rightFile} --output {outputFile}'
+		ProcessUtils.runProcess(cmd, MAX_WAITINGTIME_RESOLVE)
+	else:
+		raise Exception("wiggle can't deal with file renaming.")

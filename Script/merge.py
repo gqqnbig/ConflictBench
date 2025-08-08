@@ -59,6 +59,7 @@ class Merger(enum.Enum):
 	AutoMerge = "AutoMerge"
 	Summer = "Summer"
 	KDiff = 'KDiff'
+	Wiggle = 'Wiggle'
 
 
 def merge_with_JDime(input_path, output_path, mode, logger):
@@ -500,6 +501,8 @@ run the merge at the given path.
 			merger = Merger.JDime
 		elif 'kdiff' in mergerPath.lower():
 			merger = Merger.KDiff
+		elif 'wiggle' in mergerPath.lower():
+			merger = Merger.Wiggle
 		else:
 			print(f"Can't recognize the merger from path {mergerPath}. Name a folder or the file to the supported merger.", file=sys.stderr)
 			exit(commandLineError)
