@@ -28,7 +28,6 @@ IntelliMerge_executable_path = 'MergeTools/IntelliMerge/IntelliMerge-1.0.9-all.j
 summerPath = None
 
 commandLineError = 1
-toolError = 10
 
 # Set constant
 # Set the longest waiting time to wait for a task to execute (Unit: minutes)
@@ -100,53 +99,6 @@ def merge_with_JDime(input_path, output_path, mode, logger):
 		pass
 
 
-def merge_with_FSTMerge(toolPath, repoDir, output_path, logger):
-	"""
-
-	:param toolPath:
-	:param repoDir:
-	:param output_path:
-	:param logger: for debug info and critical error. Do not raise an exception as well as writing to log.
-	:return:
-	"""
-	# Create merge.config at first
-	repoName = pathlib.Path(repoDir).name
-	configPath = os.path.normpath(os.path.join(output_path, repoName + ".config"))
-	if not os.path.exists(configPath):
-		with open(configPath, "w") as f:
-			f.write(f"{repoName}-left\n{repoName}-base\n{repoName}-right")
-
-	cmd = f'java -cp {toolPath} merger.FSTGenMerger' + \
-		  f' --expression {configPath} --output-directory {output_path} --base-directory {pathlib.Path(repoDir).parent}'
-
-	logger.debug(f'cmd: {cmd}')
-
-	# I can't call ProcessUtils.runProcess because FSTMerge can fail but still return exit code 0.
-	proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-	try:
-		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
-		errs = errs.decode('utf-8', errors='ignore')
-
-		if r'Cannot run program "C:\Programme\cygwin\bin\git.exe"' in errs or \
-				'unknown option: --merge-file' in errs:
-			logger.error('FSTMerge calls git with incorrect command line options. ' +
-						 'featurehouse_20220107.jar included in ConflictBench may only be used on Linux.\n' +
-						 'See https://github.com/joliebig/featurehouse/blob/81724157bc638524e72af5bb689cf939e6df8599/fstmerge/merger/LineBasedMerger.java#L93-L96')
-			exit(toolError)
-
-		if proc.returncode != 0:
-			if len(errs) > 500:
-				errs = f'Error message has {len(errs)} characters.'
-			raise subprocess.SubprocessError("Fail to run '" + cmd + "' in shell: " + errs)
-
-		if logger.isEnabledFor(logging.DEBUG):
-			logger.debug(outs.decode('utf-8', errors='ignore'))
-	except subprocess.TimeoutExpired:
-		# Terminate the unfinished process
-		proc.terminate()
-		raise subprocess.SubprocessError(f'{cmd} does not finish in time')
-
-
 def merge_with_AutoMerge(toolPath, left, base, right, output_path, logger):
 	# I can't use ProcessUtils.runProcess because AutoMerge needs to look up the git library.
 	cmd = f"{javaPath} -jar {toolPath} -o {output_path} -m structured -log info -f -S {left} {base} {right}"
@@ -164,19 +116,6 @@ def merge_with_AutoMerge(toolPath, left, base, right, output_path, logger):
 		# Terminate the unfinished process
 		proc.terminate()
 		raise subprocess.SubprocessError(f'{cmd} does not finish in time')
-
-
-def merge_with_summer(toolPath, repo, leftSha, rightSha, baseSha, output_path, targetFile1, targetFile2=None):
-	cmd = f'{toolPath} merge -C {repo} -l {leftSha} -r {rightSha} -b {baseSha} --worktree {output_path} --keep -- {targetFile1}'
-	if targetFile2 is not None and targetFile2 != targetFile1:
-		cmd += ' ' + targetFile2
-	try:
-		logger.debug(f'cmd: {cmd}')
-		stdout = ProcessUtils.runProcess(cmd, MAX_WAITINGTIME_RESOLVE)
-		if logger.isEnabledFor(logging.DEBUG):
-			logger.debug(stdout.decode('utf-8', errors='ignore'))
-	except subprocess.SubprocessError as e:
-		logger.error(e)
 
 
 # merge two commits
@@ -283,23 +222,21 @@ def processExample(merger: Merger, mergerPath, subjectRepo: dataset.SubjectRepo)
 	match merger:
 		case Merger.Summer:
 			pathlib.Path(os.path.join(resultFolder, 'summer')).mkdir(exist_ok=True)
-			# commit['summer_mergeable'] = True
 			try:
-				merge_with_summer(mergerPath, repoPath,
-								  subjectRepo.leftCommit, subjectRepo.rightCommit, subjectRepo.baseCommit,
-								  os.path.join(resultFolder, 'summer', subjectRepo.repoName), subjectRepo.conflictingFile, subjectRepo.getMergedFile(os.path.join(path_prefix, workspace)))
-				# commit['summer_solution_generation'] = True
+				mergeTools.runSummer(mergerPath, repoPath,
+									 subjectRepo.leftCommit, subjectRepo.rightCommit, subjectRepo.baseCommit, mergeResultFolder,
+									 subjectRepo.conflictingFile, subjectRepo.getMergedFile(os.path.join(path_prefix, workspace)),
+									 logger)
 				logger.info("summer solution generated")
 			except Exception as e:
-				# commit['summer_solution_generation'] = False
-				pass
+				logger.error(e)
+			# Summer doesn't need file existence check.
+			return
 		case Merger.FstMerge:
 			try:
-				merge_with_FSTMerge(mergerPath, repoPath, os.path.join(resultFolder, 'FSTMerge'), logger)
-				logger.info("FSTMerge solution generated")
+				mergeTools.runFSTMerge(mergerPath, repoPath, toolResultFolder, logger)
 			except Exception as e:
 				logger.error(e)
-
 		case Merger.AutoMerge:
 			try:
 				merge_with_AutoMerge(mergerPath, left_Folder, base_folder, right_folder, mergeResultFolder, logger)

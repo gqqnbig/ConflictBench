@@ -1,3 +1,5 @@
+import logging
+import os
 import pathlib
 import subprocess
 import threading
@@ -6,6 +8,7 @@ import ProcessUtils
 
 # maximum waiting time to resolve a merge conflict.
 MAX_WAITINGTIME_RESOLVE = 3 * 60
+toolError = 10
 
 
 def runIntelliMerge(toolPath, left, base, right, output_path, logger):
@@ -91,6 +94,66 @@ def runWiggle(toolPath, left, base, right, output_path, logger, repo):
 				errs = f'Error message has {len(errs)} characters.'
 			cmd = '(quoting skipped) ' + ' '.join([str(c) for c in cmd])
 			raise subprocess.SubprocessError("Fail to run '" + cmd + "' in shell: " + errs)
+	except subprocess.TimeoutExpired:
+		# Terminate the unfinished process
+		proc.terminate()
+		raise subprocess.SubprocessError(f'{cmd} does not finish in time')
+
+
+def runSummer(toolPath, repo, leftSha, rightSha, baseSha, output_path, targetFile1, targetFile2, logger):
+	cmd = f'{toolPath} merge -C {repo} -l {leftSha} -r {rightSha} -b {baseSha} --worktree {output_path} --keep -- {targetFile1}'
+	if targetFile2 is not None and targetFile2 != targetFile1:
+		cmd += ' ' + targetFile2
+	try:
+		logger.debug(f'cmd: {cmd}')
+		stdout = ProcessUtils.runProcess(cmd, MAX_WAITINGTIME_RESOLVE)
+		if logger.isEnabledFor(logging.DEBUG):
+			logger.debug(stdout.decode('utf-8', errors='ignore'))
+	except subprocess.SubprocessError as e:
+		logger.error(e)
+
+
+def runFSTMerge(toolPath, repoDir, containerPath, logger):
+	"""
+
+	:param toolPath:
+	:param repoDir:
+	:param containerPath:
+	:param logger: for debug info and critical error. Do not raise an exception as well as writing to log.
+	:return:
+	"""
+	# Create merge.config at first
+	repoName = pathlib.Path(repoDir).name
+	configPath = os.path.normpath(os.path.join(containerPath, repoName + ".config"))
+	if not os.path.exists(configPath):
+		with open(configPath, "w") as f:
+			f.write(f"{repoName}-left\n{repoName}-base\n{repoName}-right")
+
+	cmd = f'java -cp {toolPath} merger.FSTGenMerger' + \
+		  f' --expression {configPath} --output-directory {containerPath} --base-directory {pathlib.Path(repoDir).parent}'
+
+	logger.debug(f'cmd: {cmd}')
+
+	# I can't call ProcessUtils.runProcess because FSTMerge can fail but still return exit code 0.
+	proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	try:
+		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
+		errs = errs.decode('utf-8', errors='ignore')
+
+		if r'Cannot run program "C:\Programme\cygwin\bin\git.exe"' in errs or \
+				'unknown option: --merge-file' in errs:
+			logger.error('FSTMerge calls git with incorrect command line options. ' +
+						 'featurehouse_20220107.jar included in ConflictBench may only be used on Linux.\n' +
+						 'See https://github.com/joliebig/featurehouse/blob/81724157bc638524e72af5bb689cf939e6df8599/fstmerge/merger/LineBasedMerger.java#L93-L96')
+			exit(toolError)
+
+		if proc.returncode != 0:
+			if len(errs) > 500:
+				errs = f'Error message has {len(errs)} characters.'
+			raise subprocess.SubprocessError("Fail to run '" + cmd + "' in shell: " + errs)
+
+		if logger.isEnabledFor(logging.DEBUG):
+			logger.debug(outs.decode('utf-8', errors='ignore'))
 	except subprocess.TimeoutExpired:
 		# Terminate the unfinished process
 		proc.terminate()
