@@ -15,6 +15,8 @@ def runProcess(cmd, timeout) -> bytes:
 			errs = errs.decode('utf-8', errors='ignore')
 			if len(errs) > 500:
 				errs = f'Error message has {len(errs)} characters.'
+			if isinstance(cmd, list):
+				cmd = '(quoting skipped) ' + ' '.join([str(c) for c in cmd])
 			raise subprocess.SubprocessError("Fail to run '" + cmd + "' in shell: " + errs)
 
 		return outs

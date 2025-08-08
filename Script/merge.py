@@ -277,6 +277,9 @@ def processExample(merger: Merger, mergerPath, subjectRepo: dataset.SubjectRepo)
 
 	toolResultFolder = pathlib.Path(resultFolder, Merger(merger).value)
 	toolResultFolder.mkdir(exist_ok=True)
+	mergeResultFolder = toolResultFolder / subjectRepo.repoName
+	mergeResultFolder.mkdir(exist_ok=True)
+	(base_folder, left_Folder, right_folder, child_folder) = create4Worktrees(subjectRepo, os.path.join(path_prefix, workspace), repoPath)
 	match merger:
 		case Merger.Summer:
 			pathlib.Path(os.path.join(resultFolder, 'summer')).mkdir(exist_ok=True)
@@ -291,8 +294,6 @@ def processExample(merger: Merger, mergerPath, subjectRepo: dataset.SubjectRepo)
 				# commit['summer_solution_generation'] = False
 				pass
 		case Merger.FstMerge:
-			pathlib.Path(os.path.join(resultFolder, 'FSTMerge')).mkdir(exist_ok=True)
-			create4Worktrees(subjectRepo, os.path.join(path_prefix, workspace), repoPath)
 			try:
 				merge_with_FSTMerge(mergerPath, repoPath, os.path.join(resultFolder, 'FSTMerge'), logger)
 				logger.info("FSTMerge solution generated")
@@ -300,30 +301,29 @@ def processExample(merger: Merger, mergerPath, subjectRepo: dataset.SubjectRepo)
 				logger.error(e)
 
 		case Merger.AutoMerge:
-			mergeResultFolder = toolResultFolder / subjectRepo.repoName
-			mergeResultFolder.mkdir(exist_ok=True)
-			(base_folder, left_Folder, right_folder, child_folder) = create4Worktrees(subjectRepo, os.path.join(path_prefix, workspace), repoPath)
 			try:
 				merge_with_AutoMerge(mergerPath, left_Folder, base_folder, right_folder, mergeResultFolder, logger)
 			except Exception as e:
 				logger.error(e)
 				return
 		case Merger.IntelliMerge:
-			mergeResultFolder = toolResultFolder / subjectRepo.repoName
-			mergeResultFolder.mkdir(exist_ok=True)
-			(base_folder, left_Folder, right_folder, child_folder) = create4Worktrees(subjectRepo, os.path.join(path_prefix, workspace), repoPath)
 			try:
 				mergeTools.runIntelliMerge(mergerPath, left_Folder, base_folder, right_folder, mergeResultFolder, logger)
 			except Exception as e:
 				logger.error(e)
 				return
 		case Merger.KDiff:
-			mergeResultFolder = toolResultFolder / subjectRepo.repoName
-			mergeResultFolder.mkdir(exist_ok=True)
-			(base_folder, left_Folder, right_folder, child_folder) = create4Worktrees(subjectRepo, os.path.join(path_prefix, workspace), repoPath)
 			try:
 				if False is mergeTools.runKDiff3(mergerPath, left_Folder, base_folder, right_folder, mergeResultFolder, logger):
 					logger.info('KDiff failed.')
+					return
+			except Exception as e:
+				logger.error(e)
+				return
+		case Merger.Wiggle:
+			try:
+				if False is mergeTools.runWiggle(mergerPath, left_Folder, base_folder, right_folder, mergeResultFolder, logger, subjectRepo):
+					logger.info('Wiggle failed')
 					return
 			except Exception as e:
 				logger.error(e)

@@ -75,8 +75,10 @@ def runWiggle(toolPath, left, base, right, output_path, logger, repo):
 	rightFile = pathlib.Path(right) / repo.conflictingFile
 	if baseFile.exists() and leftFile.exists() and rightFile.exists():
 		outputFile = pathlib.Path(output_path) / repo.conflictingFile
-		outputFile.parent.mkdir(exist_ok=True)
-		cmd = f'{toolPath} --merge {baseFile} {rightFile} {rightFile} --output {outputFile}'
+		outputFile.parent.mkdir(exist_ok=True, parents=True)
+		cmd = [toolPath,
+			   '--merge', baseFile, rightFile, rightFile,
+			   '--output', outputFile]
 		ProcessUtils.runProcess(cmd, MAX_WAITINGTIME_RESOLVE)
 	else:
 		raise Exception("wiggle can't deal with file renaming.")
