@@ -50,42 +50,42 @@ class Merger(enum.Enum):
 	Wiggle = 'Wiggle'
 
 
-def merge_with_JDime(input_path, output_path, mode, logger):
-	proc = None
-	try:
-		if mode == 0:
-			# linebased+structured
-			mode_cmd = "linebased,structured"
-		elif mode == 1:
-			# structured:
-			mode_cmd = "structured"
-		else:
-			raise AbnormalBehaviourError("Undefined mode in JDime")
-		proc = subprocess.Popen(os.path.join(path_prefix, JDime_executable_path) +
-								" " + "-f --mode " + mode_cmd +
-								" --output " + output_path + " " +
-								os.path.join(input_path, "left") + " " +
-								os.path.join(input_path, "base") + " " +
-								os.path.join(input_path, "right"),
-								stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
-		if proc.returncode == 0:
-			# Update logger
-			logger.info("Finish JDime")
-		else:
-			# Failed to run JDime
-			logger.info("Fail to run JDime")
-			raise AbnormalBehaviourError("Fail to run JDime")
-	except subprocess.TimeoutExpired:
-		# Terminate the unfinished process
-		if proc is not None:
-			proc.terminate()
-		# Timeout occur
-		# Update logger
-		logger.error("Fail to run JDime in time")
-		raise AbnormalBehaviourError("Fail to run JDime in time")
-	finally:
-		pass
+# def merge_with_JDime(input_path, output_path, mode, logger):
+# 	proc = None
+# 	try:
+# 		if mode == 0:
+# 			# linebased+structured
+# 			mode_cmd = "linebased,structured"
+# 		elif mode == 1:
+# 			# structured:
+# 			mode_cmd = "structured"
+# 		else:
+# 			raise AbnormalBehaviourError("Undefined mode in JDime")
+# 		proc = subprocess.Popen(os.path.join(path_prefix, JDime_executable_path) +
+# 								" " + "-f --mode " + mode_cmd +
+# 								" --output " + output_path + " " +
+# 								os.path.join(input_path, "left") + " " +
+# 								os.path.join(input_path, "base") + " " +
+# 								os.path.join(input_path, "right"),
+# 								stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+# 		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
+# 		if proc.returncode == 0:
+# 			# Update logger
+# 			logger.info("Finish JDime")
+# 		else:
+# 			# Failed to run JDime
+# 			logger.info("Fail to run JDime")
+# 			raise AbnormalBehaviourError("Fail to run JDime")
+# 	except subprocess.TimeoutExpired:
+# 		# Terminate the unfinished process
+# 		if proc is not None:
+# 			proc.terminate()
+# 		# Timeout occur
+# 		# Update logger
+# 		logger.error("Fail to run JDime in time")
+# 		raise AbnormalBehaviourError("Fail to run JDime in time")
+# 	finally:
+# 		pass
 
 
 def merge_with_AutoMerge(toolPath, left, base, right, output_path, logger):
