@@ -134,8 +134,8 @@ def runFSTMerge(toolPath, repoDir, containerPath, logger):
 
 	logger.debug(f'cmd: {cmd}')
 
-	# I can't call ProcessUtils.runProcess because FSTMerge can fail but still return exit code 0.
-	proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=containerPath)
+    # On POSIX, if cmd is string, shell must be True
+	proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=containerPath, shell=True)
 	try:
 		outs, errs = proc.communicate(timeout=MAX_WAITINGTIME_RESOLVE)
 		errs = errs.decode('utf-8', errors='ignore')
