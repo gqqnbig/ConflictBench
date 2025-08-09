@@ -21,26 +21,15 @@ import ProcessUtils
 
 # Set path
 workspace = 'Resource/workspace'
-logger_path = 'Logger'
 output_path = 'Resource/output'
-JDime_executable_path = 'MergeTools/JDime/bin/JDime'
-IntelliMerge_executable_path = 'MergeTools/IntelliMerge/IntelliMerge-1.0.9-all.jar'
-summerPath = None
 
 commandLineError = 1
 
 # Set constant
 # Set the longest waiting time to wait for a task to execute (Unit: minutes)
 MAX_WAITINGTIME_MERGE = 5 * 60
-MAX_WAITINGTIME_CLONE = 10 * 60
-MAX_WAITINGTIME_MERGE_BASE = 1 * 60
-MAX_WAITINGTIME_RESET = 5 * 60
 # maximum waiting time to resolve a merge conflict.
 MAX_WAITINGTIME_RESOLVE = 3 * 60
-MAX_WAITINGTIME_DIFF = 5 * 60
-MAX_WAITINGTIME_LOG = 5 * 60
-MAX_WAITINGTIME_COMPILE = 5 * 60
-MAX_WAITINGTIME_TEST = 10 * 60
 Rename_Threshold = "90%"
 
 
