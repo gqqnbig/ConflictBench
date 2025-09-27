@@ -1,7 +1,7 @@
 KDiff3
 https://github.com/KDE/kdiff3
 
-Our version in this experiment is 1.9.5.
+Our version in this experiment is 1.12.3.
 
 To install KDiff3,
 apt install kdiff3
